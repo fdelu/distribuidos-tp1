@@ -1,0 +1,32 @@
+version: "3"
+services:
+  rabbitmq:
+    profiles:
+      - donotstart
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    ports:
+      - 15672:15672
+    networks:
+      - internal_net
+
+  client:
+    build:
+      dockerfile: Dockerfile
+      args:
+        WORKDIR: client
+    volumes:
+      - type: bind
+        source: ./client/data
+        target: /tmp/data
+    networks:
+      - outside_net
+
+networks:
+  outside_net:
+    ipam:
+      driver: default
+  internal_net:
+    ipam:
+      driver: default
