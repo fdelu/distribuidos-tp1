@@ -67,6 +67,6 @@ def deserialize_object(data_type: Type[T], data: Any) -> T:
 
 
 def deserialize(
-    data_type, data: str, deserializer: Callable[[str], Translated] = json.loads
+    data_type, data: Any, deserializer: Callable[[Any], Translated] = json.loads
 ) -> Any:
     return deserialize_item(data_type, deserializer(data))

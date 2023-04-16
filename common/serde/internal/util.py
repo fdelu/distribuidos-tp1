@@ -14,7 +14,7 @@ Translated = (
     | None
 )
 
-SIMPLE_TYPES = [str, int, float, types.NoneType]
+SIMPLE_TYPES = [str, int, float, types.NoneType, bool]
 
 P = ParamSpec("P")
 Serializer = Callable[Concatenate[Translated, P], str]

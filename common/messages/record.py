@@ -5,9 +5,10 @@ from dataclasses import dataclass
 class Station:
     code: str
     name: str
-    latitude: float
-    longitude: float
+    latitude: float | None
+    longitude: float | None
     year: int
+    city: str
 
 
 @dataclass()
@@ -16,15 +17,29 @@ class Trip:
     start_station_code: str
     end_date: str
     end_station_code: str
-    duration_sec: int
+    duration_sec: float
     is_member: bool
     year: int
+    city: str
 
 
 @dataclass()
 class Weather:
     date: str
     precipitation: float
+    city: str
 
 
-Record = Station | Trip | Weather
+BasicRecord = Station | Trip | Weather
+
+
+@dataclass()
+class Batch:
+    values: list[BasicRecord]
+
+
+class End:
+    pass
+
+
+Record = BasicRecord | Batch | End

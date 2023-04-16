@@ -20,14 +20,13 @@ def serialize_item(item: Any, expected_type: Any) -> Translated:
 
 
 def serialize_union(item: Any, type_info: types.UnionType) -> Translated:
-    for t in type_info.__args__:
-        try:
-            return {"type": t.__name__, "value": serialize_item(item, t)}
-        except Exception:
-            pass
-    raise Exception(
-        f"Union type {type_info} has failed to serialize as any of its types"
-    )
+    if type(item) not in type_info.__args__:
+        raise Exception(
+            f"Union type {type_info} has failed to serialize: {type(item)} not in union"
+            " type"
+        )
+
+    return {"type": type(item).__name__, "value": serialize_item(item, type(item))}
 
 
 def serialize_generic(collection: Any, type_info: types.GenericAlias) -> Translated:

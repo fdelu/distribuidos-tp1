@@ -1,15 +1,29 @@
 version: "3"
 services:
   rabbitmq:
-    profiles:
-      - donotstart
     build:
       context: ./rabbitmq
       dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ./rabbitmq/rabbitmq.conf
+        target: /etc/rabbitmq/rabbitmq.conf
     ports:
       - 15672:15672
     networks:
       - internal_net
+
+  input:
+    build:
+      dockerfile: Dockerfile
+      args:
+        WORKDIR: input
+    networks:
+      - outside_net
+      - internal_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   client:
     build:
@@ -22,6 +36,8 @@ services:
         target: /tmp/data
     networks:
       - outside_net
+    depends_on:
+      - input
 
 networks:
   outside_net:
