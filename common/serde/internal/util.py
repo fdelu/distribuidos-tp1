@@ -1,5 +1,5 @@
 import types
-from typing import Callable, Concatenate, ParamSpec, Type, TypeVar, get_type_hints
+from typing import Callable, Concatenate, ParamSpec
 
 """
 Type alias for the types that can be serialized and deserialized.
@@ -27,15 +27,15 @@ def verify_type(item: object, expected_type: type):
 
     Does not verify generic types, only the base type.
     """
-    if type(expected_type) == types.UnionType:
+    if isinstance(expected_type, types.UnionType):
         for t in get_union_types(expected_type):
             try:
                 verify_type(item, t)
                 return
-            except:
+            except Exception:
                 pass
 
-    if type(expected_type) == types.GenericAlias:
+    if isinstance(expected_type, types.GenericAlias):
         base_type = get_generic_types(expected_type)[0]
         if base_type == type(item):
             return
