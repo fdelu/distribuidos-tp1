@@ -58,7 +58,7 @@ def serialize_generic(collection: Any, type_info: types.GenericAlias) -> Transla
 
 def serialize_object(data: object, expected_type: type) -> Translated:
     verify_type(data, expected_type)
-    type_hints = get_type_hints(data)
+    type_hints = get_type_hints(type(data))
     out = []
     for name, t in type_hints.items():
         out.append(serialize_item(getattr(data, name), t))
