@@ -31,11 +31,7 @@ class Weather:
 
 
 BasicRecord = Station | Trip | Weather
-
-
-@dataclass()
-class Batch:
-    values: list[BasicRecord]
+Batch = list[Station] | list[Trip] | list[Weather]
 
 
 class End:

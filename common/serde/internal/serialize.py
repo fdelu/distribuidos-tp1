@@ -1,8 +1,14 @@
 import json
 import types
-from typing import Any, Callable, get_type_hints
+from typing import Any, get_args, get_origin, get_type_hints
 
-from .util import SIMPLE_TYPES, Translated, verify_type
+from .util import (
+    SIMPLE_TYPES,
+    SerializationError,
+    Translated,
+    get_type_name,
+    verify_type,
+)
 
 
 def serialize_item(item: Any, expected_type: Any) -> Translated:
@@ -20,44 +26,50 @@ def serialize_item(item: Any, expected_type: Any) -> Translated:
 
 
 def serialize_union(item: Any, type_info: types.UnionType) -> Translated:
-    if type(item) not in type_info.__args__:
-        raise Exception(
-            f"Union type {type_info} has failed to serialize: {type(item)} not in union"
-            " type"
-        )
+    for t in get_args(type_info):
+        if isinstance(t, types.GenericAlias):
+            try:  # check if it's this generic type
+                return [get_type_name(t), serialize_generic(item, t)]
+            except SerializationError:
+                pass
+        elif type(item) == t:
+            return [get_type_name(t), item]
 
-    return {"type": type(item).__name__, "value": serialize_item(item, type(item))}
+    raise SerializationError(
+        f"Union type {type_info} has failed to serialize: {type(item)} not in union"
+        " type"
+    )
 
 
 def serialize_generic(collection: Any, type_info: types.GenericAlias) -> Translated:
-    expected_type: Any = type_info.__origin__
+    expected_type: Any = get_origin(type_info)
     verify_type(collection, expected_type)
     if expected_type in (list, set):
-        item_type = type_info.__args__[0]
+        item_type = get_args(type_info)[0]
         return [serialize_item(i, item_type) for i in collection]
     if expected_type == dict:
-        key_type, value_type = type_info.__args__
+        key_type, value_type = get_args(type_info)
         return [
             [serialize_item(k, key_type), serialize_item(v, value_type)]
             for k, v in collection.items()
         ]
-    raise Exception(f"Generic type {expected_type} is not supported")
+    raise SerializationError(f"Generic type {expected_type} is not supported")
 
 
 def serialize_object(data: object, expected_type: type) -> Translated:
     verify_type(data, expected_type)
     type_hints = get_type_hints(data)
-    out = {}
+    out = []
     for name, t in type_hints.items():
-        out[name] = serialize_item(getattr(data, name), t)
+        out.append(serialize_item(getattr(data, name), t))
     return out
 
 
 def serialize(
     data: object,
-    serializer: Callable[[Translated], str] = json.dumps,
     set_type: Any | None = None,
+    indent: int | None = None,
 ) -> str:
-    if set_type is not None:
-        return serializer(serialize_item(data, set_type))
-    return serializer(serialize_item(data, type(data)))
+    return json.dumps(
+        serialize_item(data, set_type if set_type else type(data)), indent=indent
+    )

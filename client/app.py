@@ -1,15 +1,13 @@
 #!/usr/bin/python3
 import logging
 import types
-from typing import Any, Type, TypeVar, get_type_hints
+from typing import Any, Type, TypeVar, get_type_hints, get_args
 import zmq
 import os
 import csv
 from common.log import setup_logs
-from common.serde import serialize
+from common.serde import serialize, SerializationError
 from common.messages.record import (
-    BasicRecord,
-    Batch,
     End,
     Station,
     Record,
@@ -21,7 +19,7 @@ setup_logs()
 DATA_PATH = "/tmp/data"
 IP = "input"
 PORT = "5555"
-BATCH_SIZE = 50
+BATCH_SIZE = 100
 T = TypeVar("T", Station, Trip, Weather)
 
 
@@ -40,7 +38,7 @@ def deserialize_row(row: list[str], type: Type[T]) -> T:
                 args.append(None)
                 continue
             else:
-                type_hint = type_hint.__args__[0]
+                type_hint = get_args(type_hint)[0]
         if type_hint == bool:
             args.append(value == "1")
         elif type_hint in (int, float):
@@ -58,7 +56,8 @@ def send_from_file(
     keep_only_first: int | None = None,
 ) -> int:
     count = 0
-    batch: list[BasicRecord] = []
+    batch = []
+
     with open(f"{DATA_PATH}/{city}/{file}.csv") as f:
         reader = csv.reader(f)
         next(reader)  # skip header
@@ -69,16 +68,18 @@ def send_from_file(
             row.append(city)
             try:
                 station = deserialize_row(row, record_type)
-            except Exception:
+            except SerializationError:
                 logging.exception(f"Failed to deserialize {row} for {record_type}")
                 continue
             batch.append(station)
             count += 1
             if len(batch) == BATCH_SIZE:
-                socket.send(serialize(Batch(batch), set_type=Record).encode())
+                socket.send(serialize(batch, set_type=Record).encode())
                 batch = []
+
     if batch:
-        socket.send(serialize(Batch(batch), set_type=Record).encode())
+        socket.send(serialize(batch, set_type=Record).encode())
+
     return count
 
 

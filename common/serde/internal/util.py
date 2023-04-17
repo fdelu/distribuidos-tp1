@@ -1,18 +1,10 @@
 import types
-from typing import Callable, Concatenate, ParamSpec
+from typing import Callable, Concatenate, ParamSpec, get_args, get_origin
 
 """
 Type alias for the types that can be serialized and deserialized.
 """
-Translated = (
-    dict[str, "Translated"]
-    | list["Translated"]
-    | set["Translated"]
-    | str
-    | int
-    | float
-    | None
-)
+Translated = list["Translated"] | str | int | float | bool | None
 
 SIMPLE_TYPES = [str, int, float, types.NoneType, bool]
 
@@ -28,35 +20,38 @@ def verify_type(item: object, expected_type: type):
     Does not verify generic types, only the base type.
     """
     if isinstance(expected_type, types.UnionType):
-        for t in get_union_types(expected_type):
+        for t in get_args(expected_type):
             try:
                 verify_type(item, t)
                 return
-            except Exception:
+            except SerializationError:
                 pass
 
     if isinstance(expected_type, types.GenericAlias):
-        base_type = get_generic_types(expected_type)[0]
+        base_type = get_origin(expected_type)
         if base_type == type(item):
             return
 
     if type(item) == expected_type:
         return
 
-    raise Exception(
+    raise SerializationError(
         f"Expected type {expected_type} but got {type(item)} (value: {item}))"
     )
 
 
-def get_union_types(type_info: types.UnionType) -> tuple[type, ...]:
-    """
-    Returns the possible types of an Union type.
-    """
-    return type_info.__args__
+def get_type_name(type) -> str:
+    if isinstance(type, types.GenericAlias):
+        return (
+            get_type_name(get_origin(type))
+            + f"[{', '.join(get_type_name(x) for x in get_args(type))}]"
+        )
+    return type.__name__
 
 
-def get_generic_types(type_info: types.GenericAlias) -> tuple[type, tuple[type, ...]]:
+class SerializationError(Exception):
     """
-    Returns the base type and the generic types of a Generic type.
+    Raised when a serialization or deserialization error occurs.
     """
-    return type_info.__origin__, type_info.__args__
+
+    pass

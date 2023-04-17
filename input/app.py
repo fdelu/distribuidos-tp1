@@ -1,7 +1,7 @@
 import logging
 import zmq
 from enum import StrEnum
-from common.messages.record import BasicRecord, Batch, End, Record, Station, Weather
+from common.messages.record import BasicRecord, End, Record, Station, Weather
 from common.serde import deserialize
 from common.log import setup_logs
 
@@ -54,8 +54,8 @@ def main():
     while phase != Phase.END:
         msg = socket.recv()
         record: Record = deserialize(Record, msg.decode())
-        if isinstance(record, Batch):
-            for item in record.values:
+        if isinstance(record, list):
+            for item in record:
                 phase = process_record(item, amounts, phase)
         elif isinstance(record, End):
             phase = Phase.END
