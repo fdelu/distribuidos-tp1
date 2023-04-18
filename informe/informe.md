@@ -71,3 +71,7 @@ Los diagramas de esta sección se encuentran disponibles para visualizar en [app
 | ![](diagramas/Despliegue.png) |
 | :---------------------------: |
 |   _Diagrama de Despliegue_    |
+
+| ![](diagramas/Robustez.png) |
+| :-------------------------: |
+|   _Diagrama de Robustez_    |
