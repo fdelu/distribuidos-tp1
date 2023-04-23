@@ -1,3 +1,4 @@
+from enum import EnumType
 import json
 import types
 from typing import Any, get_args, get_origin, get_type_hints
@@ -18,11 +19,17 @@ def serialize_item(item: Any, expected_type: Any) -> Translated:
 
     if isinstance(expected_type, types.GenericAlias):
         return serialize_generic(item, expected_type)
-
     if isinstance(expected_type, types.UnionType):
         return serialize_union(item, expected_type)
+    if isinstance(expected_type, EnumType):
+        return serialize_enum(item, expected_type)
 
     return serialize_object(item, expected_type)
+
+
+def serialize_enum(item: Any, expected_type: EnumType):
+    verify_type(item, expected_type)
+    return item.value
 
 
 def serialize_union(item: Any, type_info: types.UnionType) -> Translated:

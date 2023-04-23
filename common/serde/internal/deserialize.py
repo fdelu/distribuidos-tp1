@@ -1,3 +1,4 @@
+from enum import EnumType
 import json
 import types
 from typing import Any, Type, TypeVar, get_args, get_origin, get_type_hints
@@ -5,7 +6,6 @@ from typing import Any, Type, TypeVar, get_args, get_origin, get_type_hints
 from .util import (
     SIMPLE_TYPES,
     SerializationError,
-    Translated,
     get_type_name,
     verify_type,
 )
@@ -13,7 +13,7 @@ from .util import (
 T = TypeVar("T")
 
 
-def deserialize_item(data_type: Any, data: Translated) -> Any:
+def deserialize_item(data_type: Any, data: Any) -> Any:
     if data_type in SIMPLE_TYPES:
         verify_type(data, data_type)
         return data
@@ -21,7 +21,18 @@ def deserialize_item(data_type: Any, data: Translated) -> Any:
         return deserialize_generic(data_type, data)
     if isinstance(data_type, types.UnionType):
         return deserialize_union(data_type, data)
+    if isinstance(data_type, EnumType):
+        return deserialize_enum(data_type, data)
     return deserialize_object(data_type, data)
+
+
+def deserialize_enum(type_info: EnumType, data: Any) -> Any:
+    try:
+        return type_info(data)
+    except ValueError:
+        raise SerializationError(
+            f"Can't deserialize enum {type_info}: Invalid value {data}"
+        )
 
 
 def deserialize_union(type_info: types.UnionType, data: Any) -> Any:

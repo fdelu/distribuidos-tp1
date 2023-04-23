@@ -18,8 +18,30 @@ services:
       dockerfile: Dockerfile
       args:
         WORKDIR: input
+    volumes:
+      - type: bind
+        source: config.ini
+        target: /config.ini
     networks:
       - outside_net
+      - internal_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  parsers:
+    build:
+      dockerfile: Dockerfile
+      args:
+        WORKDIR: parsers
+    deploy:
+      mode: replicated
+      replicas: 3
+    volumes:
+      - type: bind
+        source: config.ini
+        target: /config.ini
+    networks:
       - internal_net
     depends_on:
       rabbitmq:
@@ -34,6 +56,9 @@ services:
       - type: bind
         source: ./client/data
         target: /tmp/data
+      - type: bind
+        source: config.ini
+        target: /config.ini
     networks:
       - outside_net
     depends_on:
