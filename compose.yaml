@@ -19,7 +19,7 @@ services:
       service: base
     build:
       args:
-        WORKDIR: input
+        WORKDIR: 1_input
     networks:
       - outside_net
       - internal_net
@@ -33,10 +33,24 @@ services:
       service: base
     build:
       args:
-        WORKDIR: parsers
+        WORKDIR: 2_parsers
     deploy:
       mode: replicated
       replicas: ${PARSERS_SCALE}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  joiners:
+    extends:
+      file: compose-base-service.yaml
+      service: base
+    build:
+      args:
+        WORKDIR: 3_joiners
+    deploy:
+      mode: replicated
+      replicas: ${JOINERS_SCALE}
     depends_on:
       rabbitmq:
         condition: service_healthy

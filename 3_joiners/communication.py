@@ -18,7 +18,6 @@ class SystemCommunication:
 
     def setup_queues(self):
         self.channel.queue_declare(queue="raw_records")
-        self.channel.queue_declare(queue="raw_records_callback")
         self.channel.basic_consume(
             queue="raw_records", on_message_callback=self.__handle_record
         )
@@ -31,7 +30,6 @@ class SystemCommunication:
         body: bytes,
     ):
         record = deserialize(RawRecord, body.decode())
-        self.channel.basic_publish("", "raw_records_callback", "")
         self.callback(record)
 
     def start_consuming(self):

@@ -2,12 +2,12 @@ import logging
 import zmq
 
 from common.phase import Phase
+from common.messages import RecordType
 from common.messages.raw import (
     ATTRS_SPLIT_CHAR,
     HEADER_SPLIT_CHAR,
     RECORDS_SPLIT_CHAR,
     RawRecord,
-    RecordType,
 )
 from common.serde import serialize
 
@@ -25,9 +25,6 @@ class ClientHandler:
         self.phase = Phase.StationsWeather
         self.socket = socket
         self.comms = SystemCommunication(config)
-
-    def __send_record(self, record_type: RecordType, city: str):
-        pass
 
     def __get_record_data(self, header: str) -> tuple[RecordType, str]:
         record_type, city = header.split(HEADER_SPLIT_CHAR)
@@ -70,11 +67,6 @@ class ClientHandler:
                 break
 
             if self.phase == Phase.StationsWeather and record_type == RecordType.TRIP:
-                logging.info(
-                    f"{self.phase} | "
-                    "Waiting for all weather and stations to be processed"
-                )
-                self.comms.wait_for_weather_stations()
                 self.phase = Phase.Trips
                 logging.info(f"{self.phase} | Sending trips")
 

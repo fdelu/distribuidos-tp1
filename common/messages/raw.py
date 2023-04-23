@@ -1,16 +1,10 @@
 from dataclasses import dataclass
-from enum import StrEnum
+
+from common.messages import RecordType
 
 HEADER_SPLIT_CHAR = "|"
 ATTRS_SPLIT_CHAR = ","
 RECORDS_SPLIT_CHAR = "\n"
-
-
-class RecordType(StrEnum):
-    STATION = "station"
-    TRIP = "trip"
-    WEATHER = "weather"
-    End = "end"
 
 
 @dataclass

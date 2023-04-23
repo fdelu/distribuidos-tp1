@@ -1,9 +1,12 @@
 import logging
 import zmq
+
 from common.log import setup_logs
+from common.messages import RecordType
 from common.phase import Phase
+from common.messages.raw import RECORDS_SPLIT_CHAR, HEADER_SPLIT_CHAR
+
 from config import Config
-from common.messages.raw import RECORDS_SPLIT_CHAR, RecordType, HEADER_SPLIT_CHAR
 
 
 class BikeRidesAnalyzer:

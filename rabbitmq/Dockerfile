@@ -1,3 +1,3 @@
 FROM rabbitmq:3.11.13-management-alpine
-HEALTHCHECK --interval=5s --timeout=2s --retries=12 \
-    CMD rabbitmq-diagnostics -q ping
+USER rabbitmq
+HEALTHCHECK --interval=1s --timeout=3s --retries=30 CMD rabbitmq-diagnostics check_port_connectivity

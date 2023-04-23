@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 
+from common.messages import End, RecordType
+
 
 @dataclass()
 class BasicStation:
+    record_type = RecordType.STATION
     code: str
     name: str
     latitude: float | None
@@ -13,6 +16,7 @@ class BasicStation:
 
 @dataclass()
 class BasicTrip:
+    record_type = RecordType.TRIP
     start_date: str
     end_date: str
     end_station_code: str
@@ -23,9 +27,10 @@ class BasicTrip:
 
 @dataclass()
 class BasicWeather:
+    record_type = RecordType.WEATHER
     date: str
     precipitation: float
     city: str
 
 
-BasicRecord = BasicStation | BasicTrip | BasicWeather
+BasicRecord = BasicStation | BasicTrip | BasicWeather | End
