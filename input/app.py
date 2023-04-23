@@ -5,11 +5,10 @@ from input.handler import ClientHandler
 
 from config import Config
 
-setup_logs()
-
 
 def main():
     config = Config()
+    setup_logs(config.log_level)
 
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)

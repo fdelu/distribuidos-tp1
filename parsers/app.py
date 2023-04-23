@@ -5,13 +5,12 @@ from communication import SystemCommunication
 from config import Config
 from parsers.parser import RecordParser
 
-setup_logs()
-
 trips = False
 
 
 def main():
     config = Config()
+    setup_logs(config.log_level)
     parser = RecordParser()
 
     logging.info("Receiving weather & stations")

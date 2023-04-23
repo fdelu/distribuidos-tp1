@@ -1,19 +1,21 @@
 import logging
 import zmq
+from common.log import setup_logs
 from common.phase import Phase
 from config import Config
 from common.messages.raw import RECORDS_SPLIT_CHAR, RecordType, HEADER_SPLIT_CHAR
 
 
 class BikeRidesAnalyzer:
-    config: Config
     context: zmq.Context
     socket: zmq.Socket
     phase: Phase
+    config: Config
 
     def __init__(self):
-        self.config = Config()
         self.phase = Phase.StationsWeather
+        self.config = Config()
+        setup_logs(self.config.log_level)
 
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PAIR)
@@ -42,18 +44,21 @@ class BikeRidesAnalyzer:
         return count
 
     def send_stations(self, city: str, file_path: str):
+        logging.info(f"Sendingg stations for {city}")
         if self.phase != Phase.StationsWeather:
             raise ValueError(f"Can't send stations in this phase: {self.phase}")
 
         self.__send_from_file(city, file_path, RecordType.STATION)
 
     def send_weather(self, city: str, file_path: str):
+        logging.info(f"Sendingg weather for {city}")
         if self.phase != Phase.StationsWeather:
             raise ValueError(f"Can't send weather in this phase: {self.phase}")
 
         self.__send_from_file(city, file_path, RecordType.WEATHER)
 
     def send_trips(self, city: str, file_path: str):
+        logging.info(f"Sendingg trips for {city}")
         if self.phase == Phase.StationsWeather:
             self.phase = Phase.Trips
 

@@ -1,4 +1,3 @@
-from concurrent.futures import ProcessPoolExecutor
 import logging
 
 from common.messages.raw import RawRecord, RecordType

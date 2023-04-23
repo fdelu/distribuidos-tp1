@@ -3,6 +3,10 @@ DATASET_ID := 190kC3LtexSWKDIYS1IbAoCnrP9oHeE9j
 DATASET_HASH := 8b80b71965721392857021c74bba58c6
 DATASET_FILE := client/dataset.zip
 SED_EXPR := s/^.*<form[^>]\+\?action=\"\([^\"]\+\?\)\"[^>]*\?>.*\$$/\1/p
+
+.PHONY:
+.SILENT:
+
 default: docker-compose-up
 
 get-dataset:
@@ -26,7 +30,7 @@ build: get-dataset
 	docker compose build
 
 docker-compose-up: build
-	docker compose up -d --build
+	docker compose up -d	
 
 docker-compose-stop:
 	docker compose stop -t 1
@@ -38,6 +42,3 @@ docker-compose-logs:
 	docker compose logs -f
 
 debug: docker-compose-down docker-compose-up docker-compose-logs
-
-.PHONY: get-dataset build docker-compose-stop docker-compose-down -docker-compose-logs debug
-.SILENT: get-dataset build docker-compose-stop docker-compose-down -docker-compose-logs debug

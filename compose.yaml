@@ -14,14 +14,12 @@ services:
       - internal_net
 
   input:
+    extends:
+      file: compose-base-service.yaml
+      service: base
     build:
-      dockerfile: Dockerfile
       args:
         WORKDIR: input
-    volumes:
-      - type: bind
-        source: config.ini
-        target: /config.ini
     networks:
       - outside_net
       - internal_net
@@ -30,19 +28,15 @@ services:
         condition: service_healthy
 
   parsers:
+    extends:
+      file: compose-base-service.yaml
+      service: base
     build:
-      dockerfile: Dockerfile
       args:
         WORKDIR: parsers
     deploy:
       mode: replicated
-      replicas: 3
-    volumes:
-      - type: bind
-        source: config.ini
-        target: /config.ini
-    networks:
-      - internal_net
+      replicas: ${PARSERS_SCALE}
     depends_on:
       rabbitmq:
         condition: service_healthy
