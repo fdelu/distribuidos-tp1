@@ -5,32 +5,38 @@ from common.messages import End, RecordType
 
 @dataclass()
 class BasicStation:
-    record_type = RecordType.STATION
     code: str
     name: str
     latitude: float | None
     longitude: float | None
-    year: int
+    year: str
     city: str
+
+    def get_routing_key(self) -> str:
+        return RecordType.STATION
 
 
 @dataclass()
 class BasicTrip:
-    record_type = RecordType.TRIP
     start_date: str
-    end_date: str
-    end_station_code: str
     duration_sec: float
-    year: int
     city: str
+    start_station_code: str
+    end_station_code: str
+    year: str
+
+    def get_routing_key(self) -> str:
+        return RecordType.TRIP
 
 
 @dataclass()
 class BasicWeather:
-    record_type = RecordType.WEATHER
     date: str
     precipitation: float
     city: str
+
+    def get_routing_key(self) -> str:
+        return RecordType.WEATHER
 
 
 BasicRecord = BasicStation | BasicTrip | BasicWeather | End

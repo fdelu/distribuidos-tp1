@@ -40,7 +40,7 @@ def serialize_union(item: Any, type_info: types.UnionType) -> Translated:
             except SerializationError:
                 pass
         elif type(item) == t:
-            return [get_type_name(t), item]
+            return [get_type_name(t), serialize_item(item, t)]
 
     raise SerializationError(
         f"Union type {type_info} has failed to serialize: {type(item)} not in union"

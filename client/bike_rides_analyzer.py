@@ -42,26 +42,26 @@ class BikeRidesAnalyzer:
         if batch:
             self.socket.send(RECORDS_SPLIT_CHAR.join(batch).encode())
 
-        self.socket.send(RecordType.End.encode())
+        self.socket.send(RecordType.END.encode())
         logging.info(f"{self.phase} | {city} | Sent {count} {type} records")
         return count
 
     def send_stations(self, city: str, file_path: str):
-        logging.info(f"Sendingg stations for {city}")
+        logging.info(f"Sending stations for {city}")
         if self.phase != Phase.StationsWeather:
             raise ValueError(f"Can't send stations in this phase: {self.phase}")
 
         self.__send_from_file(city, file_path, RecordType.STATION)
 
     def send_weather(self, city: str, file_path: str):
-        logging.info(f"Sendingg weather for {city}")
+        logging.info(f"Sending weather for {city}")
         if self.phase != Phase.StationsWeather:
             raise ValueError(f"Can't send weather in this phase: {self.phase}")
 
         self.__send_from_file(city, file_path, RecordType.WEATHER)
 
     def send_trips(self, city: str, file_path: str):
-        logging.info(f"Sendingg trips for {city}")
+        logging.info(f"Sending trips for {city}")
         if self.phase == Phase.StationsWeather:
             self.phase = Phase.Trips
 
@@ -74,6 +74,6 @@ class BikeRidesAnalyzer:
         if self.phase != Phase.Trips:
             raise ValueError(f"Can't get results in this phase: {self.phase}")
         self.phase = Phase.End
-        self.socket.send(RecordType.End.encode())
+        self.socket.send(RecordType.END.encode())
 
         raise NotImplementedError("Not implemented yet")

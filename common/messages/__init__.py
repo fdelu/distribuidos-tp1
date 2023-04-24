@@ -5,8 +5,9 @@ class RecordType(StrEnum):
     STATION = "station"
     TRIP = "trip"
     WEATHER = "weather"
-    End = "end"
+    END = "end"
 
 
 class End:
-    record_type = RecordType.End
+    def get_routing_key(self) -> str:
+        return RecordType.END

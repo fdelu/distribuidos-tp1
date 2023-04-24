@@ -32,6 +32,9 @@ def verify_type(item: object, expected_type: type):
         if base_type == type(item):
             return
 
+    if expected_type == float:
+        return isinstance(item, (int, float))
+
     if type(item) == expected_type:
         return
 

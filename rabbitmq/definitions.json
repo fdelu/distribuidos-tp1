@@ -1,0 +1,72 @@
+{
+    "users": [
+        {
+            "name": "guest",
+            "password": "guest",
+            "tags": [
+                "administrator"
+            ]
+        }
+    ],
+    "vhosts": [
+        {
+            "name": "/"
+        }
+    ],
+    "permissions": [
+        {
+            "user": "guest",
+            "vhost": "/",
+            "configure": ".*",
+            "write": ".*",
+            "read": ".*"
+        }
+    ],
+    "policies": [],
+    "queues": [
+        {
+            "name": "raw_records",
+            "vhost": "/",
+            "durable": false,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "basic_trips",
+            "vhost": "/",
+            "durable": false,
+            "auto_delete": false,
+            "arguments": {}
+        }
+    ],
+    "exchanges": [
+        {
+            "name": "joined_trips",
+            "vhost": "/",
+            "type": "topic",
+            "durable": false,
+            "auto_delete": false,
+            "internal": false,
+            "arguments": {}
+        },
+        {
+            "name": "basic_records",
+            "vhost": "/",
+            "type": "direct",
+            "durable": false,
+            "auto_delete": false,
+            "internal": false,
+            "arguments": {}
+        }
+    ],
+    "bindings": [
+        {
+            "source": "basic_records",
+            "vhost": "/",
+            "destination": "basic_trips",
+            "destination_type": "queue",
+            "routing_key": "trip",
+            "arguments": {}
+        }
+    ]
+}

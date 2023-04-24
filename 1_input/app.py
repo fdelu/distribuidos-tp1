@@ -1,7 +1,7 @@
 import zmq
 
 from common.log import setup_logs
-from input.handler import ClientHandler
+from handler import ClientHandler
 
 from config import Config
 

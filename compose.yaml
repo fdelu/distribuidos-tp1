@@ -8,6 +8,9 @@ services:
       - type: bind
         source: ./rabbitmq/rabbitmq.conf
         target: /etc/rabbitmq/rabbitmq.conf
+      - type: bind
+        source: ./rabbitmq/definitions.json
+        target: /definitions.json
     ports:
       - 15672:15672
     networks:
@@ -39,6 +42,9 @@ services:
       replicas: ${PARSERS_SCALE}
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      # need to wait for joiners to have setup their queues
+      joiners:
         condition: service_healthy
 
   joiners:

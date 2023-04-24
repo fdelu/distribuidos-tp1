@@ -16,19 +16,20 @@ def parse_station(row: list[str], index: dict[str, int], city: str) -> BasicStat
         name=row[index["name"]],
         latitude=parse_optional_float(row[index["latitude"]]),
         longitude=parse_optional_float(row[index["longitude"]]),
-        year=int(row[index["yearid"]]),
+        year=row[index["yearid"]],
         city=city,
     )
 
 
 def parse_trip(row: list[str], index: dict[str, int], city: str) -> BasicTrip:
+    start_date = row[index["start_date"]].split(" ")[0]
     return BasicTrip(
-        start_date=row[index["start_date"]],
-        end_date=row[index["end_date"]],
-        end_station_code=row[index["end_station_code"]],
-        duration_sec=float(row[index["duration_sec"]]),
-        year=int(row[index["yearid"]]),
+        start_date=start_date,
+        duration_sec=min(float(row[index["duration_sec"]]), 0),
         city=city,
+        start_station_code=row[index["start_station_code"]],
+        end_station_code=row[index["end_station_code"]],
+        year=row[index["yearid"]],
     )
 
 
@@ -36,7 +37,7 @@ def parse_weather(row: list[str], index: dict[str, int], city: str) -> BasicWeat
     day_minus_1 = date.fromisoformat(row[index["date"]]) - timedelta(days=1)
     return BasicWeather(
         date=day_minus_1.isoformat(),
-        precipitation=float(row[index["precipitation"]]),
+        precipitation=float(row[index["prectot"]]),
         city=city,
     )
 

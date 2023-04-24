@@ -9,10 +9,9 @@ from common.messages.raw import (
     RECORDS_SPLIT_CHAR,
     RawRecord,
 )
-from common.serde import serialize
 
 from config import Config
-from input.communication import SystemCommunication
+from comms import SystemCommunication
 
 
 class ClientHandler:
@@ -25,6 +24,7 @@ class ClientHandler:
         self.phase = Phase.StationsWeather
         self.socket = socket
         self.comms = SystemCommunication(config)
+        self.comms.setup()
 
     def __get_record_data(self, header: str) -> tuple[RecordType, str]:
         record_type, city = header.split(HEADER_SPLIT_CHAR)
@@ -35,14 +35,14 @@ class ClientHandler:
         msg = self.socket.recv().decode()
         h, msg = msg.split(RECORDS_SPLIT_CHAR, 1)
         headers = h.split(ATTRS_SPLIT_CHAR)
-        while msg != RecordType.End:
+        while msg != RecordType.END:
             message = RawRecord(
                 record_type,
                 city,
                 headers,
                 msg.splitlines(),
             )
-            self.comms.send_record(serialize(message))
+            self.comms.send_record(message)
             count += len(msg.splitlines())
             msg = self.socket.recv().decode()
         logging.info(f"{self.phase} | {city} | Received {count} {record_type} records")
@@ -61,7 +61,7 @@ class ClientHandler:
     def get_records(self):
         logging.info(f"{self.phase} | Receiving weather and stations")
         msg = self.socket.recv().decode()
-        while msg != RecordType.End:
+        while msg != RecordType.END:
             record_type, city = self.__get_record_data(msg)
             if not self.__validate_phase(record_type):
                 break
