@@ -11,7 +11,7 @@ class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
         self.channel.exchange_declare(exchange=exchange_name, exchange_type="direct")
         self.channel.queue_declare(queue="raw_batchs")
         self.channel.queue_bind("raw_batchs", exchange_name, RecordType.RAW_BATCH)
-        self._start_consuming_from("raw_records")
+        self._start_consuming_from("raw_batchs")
 
         r = self.channel.queue_declare("")  # for end
         q_name = r.method.queue
