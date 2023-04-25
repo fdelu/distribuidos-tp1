@@ -1,13 +1,13 @@
 import logging
+from threading import Event
 import zmq
 
 from common.phase import Phase
-from common.messages import RecordType
+from common.messages import End, RecordType
 from common.messages.raw import (
-    ATTRS_SPLIT_CHAR,
     HEADER_SPLIT_CHAR,
     RECORDS_SPLIT_CHAR,
-    RawRecord,
+    RawBatch,
 )
 
 from config import Config
@@ -19,23 +19,27 @@ class ClientHandler:
     phase: Phase
     socket: zmq.Socket
 
+    stop_event: Event
+
     def __init__(self, config: Config, socket: zmq.Socket):
         self.config = config
         self.phase = Phase.StationsWeather
         self.socket = socket
         self.comms = SystemCommunication(config)
+        self.stop_event = Event()
 
     def __get_record_data(self, header: str) -> tuple[RecordType, str]:
+        if header == RecordType.END:
+            return RecordType.END, ""
         record_type, city = header.split(HEADER_SPLIT_CHAR)
         return RecordType(record_type), city
 
-    def __handle_records(self, record_type: RecordType, city: str):
+    def __handle_batch(self, record_type: RecordType, city: str):
         count = 0
         msg = self.socket.recv_string()
-        h, msg = msg.split(RECORDS_SPLIT_CHAR, 1)
-        headers = h.split(ATTRS_SPLIT_CHAR)
+        headers, msg = msg.split(RECORDS_SPLIT_CHAR, 1)
         while msg != RecordType.END:
-            message = RawRecord(
+            message = RawBatch(
                 record_type,
                 city,
                 headers,
@@ -46,28 +50,34 @@ class ClientHandler:
             msg = self.socket.recv_string()
         logging.info(f"{self.phase} | {city} | Received {count} {record_type} records")
 
-    def __phase_err(self, received: RecordType):
-        logging.error(f"Received {received} record in invalid phase {self.phase}")
+    def __handle_end(self):
+        self.comms.send(End())
 
     def __validate_phase(self, record_type: RecordType) -> bool:
         if (
-            self.phase == Phase.Trips and record_type != RecordType.TRIP
+            self.phase == Phase.Trips
+            and record_type not in (RecordType.TRIP, RecordType.END)
         ) or self.phase == Phase.End:
-            self.__phase_err(record_type)
+            logging.error(
+                f"Received {record_type} record in invalid phase {self.phase}"
+            )
             return False
         return True
 
-    def get_records(self):
+    def run(self):
         logging.info(f"{self.phase} | Receiving weather and stations")
-        msg = self.socket.recv_string()
-        while msg != RecordType.END:
+
+        while not self.stop_event.is_set():
+            msg = self.socket.recv_string()
             record_type, city = self.__get_record_data(msg)
             if not self.__validate_phase(record_type):
-                break
+                continue
 
             if self.phase == Phase.StationsWeather and record_type == RecordType.TRIP:
                 self.phase = Phase.Trips
                 logging.info(f"{self.phase} | Sending trips")
 
-            self.__handle_records(record_type, city)
-            msg = self.socket.recv_string()
+            if record_type == RecordType.END:
+                self.__handle_end()
+            else:
+                self.__handle_batch(record_type, city)

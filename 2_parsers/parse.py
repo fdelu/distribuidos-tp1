@@ -1,6 +1,6 @@
 from common.messages import RecordType
 from common.messages.basic import BasicRecord, BasicStation, BasicTrip, BasicWeather
-from common.messages.raw import ATTRS_SPLIT_CHAR, RawRecord
+from common.messages.raw import ATTRS_SPLIT_CHAR, RawBatch
 from datetime import date, timedelta
 
 
@@ -42,8 +42,8 @@ def parse_weather(row: list[str], index: dict[str, int], city: str) -> BasicWeat
     )
 
 
-def parse_rows(record: RawRecord) -> list[BasicRecord]:
-    index = {x: i for i, x in enumerate(record.headers)}
+def parse_rows(record: RawBatch) -> list[BasicRecord]:
+    index = {x: i for i, x in enumerate(record.headers.split(ATTRS_SPLIT_CHAR))}
     rows = (x.split(ATTRS_SPLIT_CHAR) for x in record.lines)
     if record.record_type == RecordType.STATION:
         return [parse_station(row, index, record.city) for row in rows]

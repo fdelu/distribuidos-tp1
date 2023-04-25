@@ -25,7 +25,7 @@
     "policies": [],
     "queues": [
         {
-            "name": "raw_records",
+            "name": "raw_batchs",
             "vhost": "/",
             "durable": false,
             "auto_delete": false,
@@ -62,9 +62,9 @@
     ],
     "exchanges": [
         {
-            "name": "joined_trips",
+            "name": "raw_records",
             "vhost": "/",
-            "type": "topic",
+            "type": "direct",
             "durable": false,
             "auto_delete": false,
             "internal": false,
@@ -82,7 +82,7 @@
         {
             "name": "joined_trips",
             "vhost": "/",
-            "type": "direct",
+            "type": "topic",
             "durable": false,
             "auto_delete": false,
             "internal": false,
@@ -90,6 +90,14 @@
         }
     ],
     "bindings": [
+        {
+            "source": "raw_records",
+            "vhost": "/",
+            "destination": "raw_batchs",
+            "destination_type": "queue",
+            "routing_key": "raw_batch",
+            "arguments": {}
+        },
         {
             "source": "basic_records",
             "vhost": "/",
@@ -104,14 +112,6 @@
             "destination": "trips_rained",
             "destination_type": "queue",
             "routing_key": "trip.*.*.true",
-            "arguments": {}
-        },
-        {
-            "source": "joined_trips",
-            "vhost": "/",
-            "destination": "trips_rained",
-            "destination_type": "queue",
-            "routing_key": "end",
             "arguments": {}
         }
     ]

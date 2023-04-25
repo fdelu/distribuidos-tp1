@@ -15,7 +15,7 @@ def main():
     socket.bind(config.address)
 
     handler = ClientHandler(config, socket)
-    handler.get_records()
+    handler.run()
 
 
 main()

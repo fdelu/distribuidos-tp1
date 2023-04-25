@@ -5,6 +5,7 @@ class RecordType(StrEnum):
     STATION = "station"
     TRIP = "trip"
     WEATHER = "weather"
+    RAW_BATCH = "raw_batch"
     END = "end"
 
 

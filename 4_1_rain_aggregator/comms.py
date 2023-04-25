@@ -14,7 +14,6 @@ class SystemCommunication(SystemCommunicationBase[JoinedRecord, PartialRainRecor
         self.channel.queue_bind(
             "trips_rained", exchange_name, f"{RecordType.TRIP}.*.*.true"
         )
-        self.channel.queue_bind("trips_rained", exchange_name, RecordType.END)
 
         # out
         self.channel.queue_declare("partial_rain_averages")
