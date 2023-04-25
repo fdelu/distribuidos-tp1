@@ -1,17 +1,18 @@
+import json
 import logging
+from typing import Any
 import zmq
 
 from common.log import setup_logs
 from common.messages import RecordType
 from common.phase import Phase
 from common.messages.raw import RECORDS_SPLIT_CHAR, HEADER_SPLIT_CHAR
+from common.messages.stats import StatType
 
 from config import Config
 
 
 class BikeRidesAnalyzer:
-    context: zmq.Context
-    socket: zmq.Socket
     phase: Phase
     config: Config
 
@@ -20,31 +21,11 @@ class BikeRidesAnalyzer:
         self.config = Config()
         setup_logs(self.config.log_level)
 
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PAIR)
-        self.socket.connect(self.config.input_address)
-
-    def __send_from_file(self, city: str, path: str, type: RecordType) -> int:
-        count = -1  # don't count the header
-        batch = []
-
-        self.socket.send(f"{type}{HEADER_SPLIT_CHAR}{city}".encode())
-
-        with open(path) as f:
-            lines = (x.strip() for x in f.readlines())
-            for line in lines:
-                batch.append(line)
-                count += 1
-                if len(batch) == self.config.batch_size:
-                    self.socket.send(RECORDS_SPLIT_CHAR.join(batch).encode())
-                    batch = []
-
-        if batch:
-            self.socket.send(RECORDS_SPLIT_CHAR.join(batch).encode())
-
-        self.socket.send(RecordType.END.encode())
-        logging.info(f"{self.phase} | {city} | Sent {count} {type} records")
-        return count
+        context = zmq.Context()
+        self.input_socket = context.socket(zmq.PAIR)
+        self.input_socket.connect(self.config.input_address)
+        self.output_socket = context.socket(zmq.REQ)
+        self.output_socket.connect(self.config.output_address)
 
     def send_stations(self, city: str, file_path: str):
         logging.info(f"Sending stations for {city}")
@@ -70,10 +51,43 @@ class BikeRidesAnalyzer:
 
         self.__send_from_file(city, file_path, RecordType.TRIP)
 
-    def get_results(self):
+    def process_results(self):
         if self.phase != Phase.Trips:
-            raise ValueError(f"Can't get results in this phase: {self.phase}")
+            raise ValueError(f"Can't process results in this phase: {self.phase}")
         self.phase = Phase.End
-        self.socket.send(RecordType.END.encode())
+        self.input_socket.send_string(RecordType.END)
 
-        raise NotImplementedError("Not implemented yet")
+    def get_rain_averages(self) -> dict[str, float]:
+        return self.__get_stat(StatType.RAIN)
+
+    def __get_stat(self, stat: StatType) -> Any:
+        if self.phase != Phase.End:
+            raise ValueError(f"Can't get stat in this phase: {self.phase}")
+
+        logging.info(f"Requesting stat {stat}")
+        self.output_socket.send_string(stat)
+        response = self.output_socket.recv_string()
+        logging.info(f"Stat {stat} received")
+        return json.loads(response)
+
+    def __send_from_file(self, city: str, path: str, type: RecordType) -> int:
+        count = -1  # don't count the header
+        batch = []
+
+        self.input_socket.send_string(f"{type}{HEADER_SPLIT_CHAR}{city}")
+
+        with open(path) as f:
+            lines = (x.strip() for x in f.readlines())
+            for line in lines:
+                batch.append(line)
+                count += 1
+                if len(batch) == self.config.batch_size:
+                    self.input_socket.send_string(RECORDS_SPLIT_CHAR.join(batch))
+                    batch = []
+
+        if batch:
+            self.input_socket.send_string(RECORDS_SPLIT_CHAR.join(batch))
+
+        self.input_socket.send_string(RecordType.END)
+        logging.info(f"{self.phase} | {city} | Sent {count} {type} records")
+        return count

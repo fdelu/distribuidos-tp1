@@ -20,8 +20,8 @@ class RecordJoiner:
     # city -> (station code, year) -> station info
     stations: dict[str, dict[tuple[str, str], StationInfo]]
 
-    def __init__(self, comms: SystemCommunication, config: Config):
-        self.comms = comms
+    def __init__(self, config: Config):
+        self.comms = SystemCommunication(config)
         self.config = config
 
         self.receiving_trips = False
@@ -31,6 +31,10 @@ class RecordJoiner:
         self.stations = {}
 
         logging.info("Receiving weather & stations")
+
+    def run(self):
+        self.comms.set_callback(self.handle_record)
+        self.comms.start_consuming_weather_stations()
 
     def handle_weather(self, weather: BasicWeather):
         if self.receiving_trips:
@@ -88,7 +92,7 @@ class RecordJoiner:
             trip.year,
             trip.city,
         )
-        self.comms.send_record(joined_trip)
+        self.comms.send(joined_trip)
 
     def handle_end(self):
         if self.receiving_trips:
@@ -97,7 +101,7 @@ class RecordJoiner:
         if self.ends_received >= self.config.parsers_count:
             logging.info("Receiving trips")
             self.receiving_trips = True
-            self.comms.consume_trips()
+            self.comms.start_consuming_trips()
         else:
             logging.info(
                 "A parser finished sending stations and weather, waiting for others"

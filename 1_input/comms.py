@@ -3,9 +3,9 @@ from common.messages.raw import RawRecord
 
 
 class SystemCommunication(SystemCommunicationBase[None, RawRecord]):
-    def load_definitions(self):
+    def _load_definitions(self):
         # out
         self.channel.queue_declare(queue="raw_records")
 
-    def get_output_names(self) -> tuple[str, str | None]:
-        return "", "raw_records"
+    def send(self, record: RawRecord):
+        self._send_to(record, "", "raw_records")

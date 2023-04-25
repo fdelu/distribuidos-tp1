@@ -37,6 +37,27 @@
             "durable": false,
             "auto_delete": false,
             "arguments": {}
+        },
+        {
+            "name": "trips_rained",
+            "vhost": "/",
+            "durable": false,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "partial_rain_averages",
+            "vhost": "/",
+            "durable": false,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "stats",
+            "vhost": "/",
+            "durable": false,
+            "auto_delete": false,
+            "arguments": {}
         }
     ],
     "exchanges": [
@@ -57,6 +78,15 @@
             "auto_delete": false,
             "internal": false,
             "arguments": {}
+        },
+        {
+            "name": "joined_trips",
+            "vhost": "/",
+            "type": "direct",
+            "durable": false,
+            "auto_delete": false,
+            "internal": false,
+            "arguments": {}
         }
     ],
     "bindings": [
@@ -66,6 +96,22 @@
             "destination": "basic_trips",
             "destination_type": "queue",
             "routing_key": "trip",
+            "arguments": {}
+        },
+        {
+            "source": "joined_trips",
+            "vhost": "/",
+            "destination": "trips_rained",
+            "destination_type": "queue",
+            "routing_key": "trip.*.*.true",
+            "arguments": {}
+        },
+        {
+            "source": "joined_trips",
+            "vhost": "/",
+            "destination": "trips_rained",
+            "destination_type": "queue",
+            "routing_key": "end",
             "arguments": {}
         }
     ]

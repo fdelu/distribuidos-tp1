@@ -5,17 +5,18 @@ from common.messages.raw import RawRecord
 
 
 class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
-    def load_definitions(self):
+    def _load_definitions(self):
         # in
         self.channel.queue_declare(queue="raw_records")
-        self.channel.basic_consume(
-            queue="raw_records", on_message_callback=self.handle_record
-        )
+        self.channel.basic_consume(queue="raw_records")
 
         # out
         self.channel.exchange_declare(exchange="basic_records", exchange_type="direct")
         self.channel.queue_declare(queue="basic_trips")
         self.channel.queue_bind("basic_trips", "basic_records", RecordType.TRIP)
 
-    def get_output_names(self) -> tuple[str, str | None]:
-        return "basic_records", None
+    def start_consuming(self):
+        self._start_consuming_from("raw_records")
+
+    def send(self, record: BasicRecord):
+        self._send_to(record, "basic_records", record.get_routing_key())

@@ -13,6 +13,3 @@ class RawRecord:
     city: str
     headers: list[str]
     lines: list[str]
-
-    def get_routing_key(self) -> str:
-        return self.record_type

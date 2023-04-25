@@ -12,7 +12,7 @@ def main():
 
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)
-    socket.bind(f"tcp://*:{config.port}")
+    socket.bind(config.address)
 
     handler = ClientHandler(config, socket)
     handler.get_records()

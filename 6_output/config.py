@@ -4,7 +4,7 @@ from common.config import ConfigBase
 class Config(ConfigBase):
     address: str
 
-    SECTION = "input"
+    SECTION = "output"
 
     def __init__(self):
         super().__init__()
