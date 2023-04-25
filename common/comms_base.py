@@ -28,6 +28,12 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         self.callback = None
         self.__setup()
 
+    def start_consuming(self):
+        """
+        Start consuming messages from the queues
+        """
+        self.channel.start_consuming()
+
     def stop_consuming(self):
         """
         Safe way to stop consuming

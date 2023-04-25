@@ -14,12 +14,10 @@ class SystemCommunication(SystemCommunicationBase[JoinedRecord, PartialRainRecor
         self.channel.queue_bind(
             "trips_rained", exchange_name, f"{RecordType.TRIP}.*.*.true"
         )
+        self._start_consuming_from("trips_rained")
 
         # out
         self.channel.queue_declare("partial_rain_averages")
 
     def send(self, record: PartialRainRecords):
         self._send_to(record, "", "partial_rain_averages")
-
-    def start_consuming(self):
-        self._start_consuming_from("trips_rained")

@@ -34,7 +34,7 @@ class RecordJoiner:
 
     def run(self):
         self.comms.set_callback(self.handle_record)
-        self.comms.start_consuming_weather_stations()
+        self.comms.start_consuming()
 
     def handle_weather(self, weather: BasicWeather):
         if self.receiving_trips:
