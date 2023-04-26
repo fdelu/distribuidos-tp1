@@ -4,13 +4,13 @@ from common.messages.stats import StatsRecord
 
 
 class SystemCommunication(SystemCommunicationBase[PartialRainRecords, StatsRecord]):
+    AVERAGES_QUEUE = "partial_rain_averages"
+
+    OUT_QUEUE = "stats"
+
     def load_definitions(self):
         # in
-        self.channel.queue_declare("partial_rain_averages")
-        self._start_consuming_from("partial_rain_averages")
-
-        # out
-        self.channel.queue_declare("stats")
+        self._start_consuming_from(self.AVERAGES_QUEUE)
 
     def send(self, record: StatsRecord):
-        self._send_to(record, "", "stats")
+        self._send_to(record, "", self.OUT_QUEUE)

@@ -27,7 +27,7 @@ services:
       - outside_net
       - internal_net
     depends_on:
-      rabbitmq:
+      parsers:
         condition: service_healthy
 
   parsers:
@@ -41,9 +41,6 @@ services:
       mode: replicated
       replicas: ${PARSERS_SCALE}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-      # need to wait for joiners to have setup their queues
       joiners:
         condition: service_healthy
 
@@ -57,6 +54,42 @@ services:
     deploy:
       mode: replicated
       replicas: ${JOINERS_SCALE}
+    depends_on:
+      rain_aggregators:
+        condition: service_healthy
+
+  rain_aggregators:
+    extends:
+      file: compose-base-service.yaml
+      service: base
+    build:
+      args:
+        WORKDIR: 4_1_rain_aggregators
+    deploy:
+      mode: replicated
+      replicas: ${RAIN_AGGREGATORS_SCALE}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rain_reducer:
+    extends:
+      file: compose-base-service.yaml
+      service: base
+    build:
+      args:
+        WORKDIR: 5_1_rain_reducer
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  output:
+    extends:
+      file: compose-base-service.yaml
+      service: base
+    build:
+      args:
+        WORKDIR: 6_output
     depends_on:
       rabbitmq:
         condition: service_healthy

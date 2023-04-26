@@ -19,8 +19,11 @@ class StatListener(Protocol):
 
 @dataclass
 class Stats:
-    rain_averages: dict[str, float] | None = None
+    rain_averages: RainAverages | None = None
     lock: Lock = Lock()
+
+    def all_done(self):
+        return self.rain_averages is not None
 
 
 class StatsReceiver:
@@ -40,21 +43,29 @@ class StatsReceiver:
             listener.received(type)
 
     def get(self, type: StatType) -> str | None:
+        result: StatsRecord | None = None
         with self.stats.lock:
-            result = getattr(self.stats, type.value)
+            if type == StatType.RAIN:
+                result = self.stats.rain_averages
+            else:
+                raise NotImplementedError()
 
-        return json.dumps(result) if result else None
+        if result is None:
+            return None
+        return json.dumps(result.data)
 
     def run(self):
         self.comms.set_callback(self.handle_record)
         self.comms.start_consuming()
 
-    def handle_rain(self, stat: RainAverages):
+    def handle_rain_averages(self, stat: RainAverages):
         logging.info("Received rain averages")
         with self.stats.lock:
-            self.stats.rain_averages = stat.data
+            self.stats.rain_averages = stat
         self.__notify_listeners(StatType.RAIN)
 
     def handle_record(self, record: StatsRecord):
-        if isinstance(record, RainAverages):
-            self.handle_rain(record)
+        record.be_handled_by(self)
+        if self.stats.all_done():
+            self.comms.stop_consuming()
+            logging.info("Received all stats, stopped consuming")

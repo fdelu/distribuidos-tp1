@@ -3,7 +3,8 @@ from common.messages.stats import StatsRecord
 
 
 class SystemCommunication(SystemCommunicationBase[StatsRecord, None]):
+    STATS_QUEUE = "stats"
+
     def load_definitions(self):
         # in
-        self.channel.queue_declare(queue="stats")
-        self._start_consuming_from("stats")
+        self._start_consuming_from(self.STATS_QUEUE)

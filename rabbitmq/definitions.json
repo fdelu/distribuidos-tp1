@@ -39,7 +39,7 @@
             "arguments": {}
         },
         {
-            "name": "trips_rained",
+            "name": "rained_trips",
             "vhost": "/",
             "durable": false,
             "auto_delete": false,
@@ -80,7 +80,7 @@
             "arguments": {}
         },
         {
-            "name": "joined_trips",
+            "name": "joined_records",
             "vhost": "/",
             "type": "topic",
             "durable": false,
@@ -107,9 +107,9 @@
             "arguments": {}
         },
         {
-            "source": "joined_trips",
+            "source": "joined_records",
             "vhost": "/",
-            "destination": "trips_rained",
+            "destination": "rained_trips",
             "destination_type": "queue",
             "routing_key": "trip.*.*.true",
             "arguments": {}

@@ -1,3 +1,4 @@
+from typing import Protocol, TypeVar
 from dataclasses import dataclass
 
 from common.messages import End, RecordType
@@ -5,6 +6,8 @@ from common.messages import End, RecordType
 HEADER_SPLIT_CHAR = "|"
 ATTRS_SPLIT_CHAR = ","
 RECORDS_SPLIT_CHAR = "\n"
+
+T = TypeVar("T", covariant=True)
 
 
 @dataclass
@@ -16,6 +19,27 @@ class RawBatch:
 
     def get_routing_key(self) -> str:
         return RecordType.RAW_BATCH
+
+    def be_handled_by(self, handler: "RawRecordHandler[T]") -> T:
+        if self.record_type == RecordType.WEATHER:
+            return handler.handle_weather_batch(self)
+        elif self.record_type == RecordType.STATION:
+            return handler.handle_station_batch(self)
+        elif self.record_type == RecordType.TRIP:
+            return handler.handle_trip_batch(self)
+        else:
+            raise ValueError(f"Unknown record type: {self.record_type}")
+
+
+class RawRecordHandler(Protocol[T]):
+    def handle_weather_batch(self, batch: RawBatch) -> T:
+        ...
+
+    def handle_station_batch(self, batch: RawBatch) -> T:
+        ...
+
+    def handle_trip_batch(self, batch: RawBatch) -> T:
+        ...
 
 
 RawRecord = RawBatch | End

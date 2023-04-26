@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol, TypeVar
 
-from common.messages import End
+T = TypeVar("T", covariant=True)
 
 
 class StatType(StrEnum):
@@ -13,7 +14,10 @@ class StatType(StrEnum):
 
 @dataclass
 class RainAverages:
-    data: dict[str, float]
+    data: dict[str, float]  # date -> average duration
+
+    def be_handled_by(self, handler: "StatHandler[T]") -> T:
+        return handler.handle_rain_averages(self)
 
 
 # For 4_2_
@@ -21,4 +25,10 @@ class RainAverages:
 
 # ...
 
-StatsRecord = RainAverages | End
+
+class StatHandler(Protocol[T]):
+    def handle_rain_averages(self, averages: RainAverages) -> T:
+        ...
+
+
+StatsRecord = RainAverages

@@ -1,6 +1,9 @@
+from typing import Protocol, TypeVar
 from dataclasses import dataclass
 
 from common.messages import End, RecordType
+
+T = TypeVar("T", covariant=True)
 
 
 @dataclass()
@@ -15,6 +18,9 @@ class BasicStation:
     def get_routing_key(self) -> str:
         return RecordType.STATION
 
+    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+        return handler.handle_station(self)
+
 
 @dataclass()
 class BasicTrip:
@@ -28,6 +34,9 @@ class BasicTrip:
     def get_routing_key(self) -> str:
         return RecordType.TRIP
 
+    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+        return handler.handle_trip(self)
+
 
 @dataclass()
 class BasicWeather:
@@ -38,5 +47,31 @@ class BasicWeather:
     def get_routing_key(self) -> str:
         return RecordType.WEATHER
 
+    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+        return handler.handle_weather(self)
 
-BasicRecord = BasicStation | BasicTrip | BasicWeather | End
+
+@dataclass
+class TripsStart:
+    def get_routing_key(self) -> str:
+        return RecordType.TRIPS_START
+
+    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+        return handler.handle_trips_start()
+
+
+class BasicRecordHandler(Protocol[T]):
+    def handle_weather(self, weather: BasicWeather) -> T:
+        ...
+
+    def handle_station(self, station: BasicStation) -> T:
+        ...
+
+    def handle_trip(self, trip: BasicTrip) -> T:
+        ...
+
+    def handle_trips_start(self) -> T:
+        ...
+
+
+BasicRecord = BasicStation | BasicTrip | BasicWeather | TripsStart | End

@@ -1,6 +1,9 @@
+from typing import Protocol, TypeVar
 from dataclasses import dataclass
 
 from common.messages import End, RecordType
+
+T = TypeVar("T", covariant=True)
 
 
 @dataclass
@@ -24,6 +27,14 @@ class JoinedTrip:
         return ".".join(
             str(x).lower() for x in (RecordType.TRIP, self.city, self.year, self.rained)
         )
+
+    def be_handled_by(self, handler: "JoinedRecordHandler[T]") -> T:
+        return handler.handle_trip(self)
+
+
+class JoinedRecordHandler(Protocol[T]):
+    def handle_trip(self, trip: JoinedTrip) -> T:
+        ...
 
 
 JoinedRecord = JoinedTrip | End

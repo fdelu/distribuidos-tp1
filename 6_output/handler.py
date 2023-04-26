@@ -8,20 +8,15 @@ END = "END"
 
 
 class ClientHandler:
-    config: Config
     stats: StatsReceiver
-
-    context: zmq.Context
     socket: zmq.Socket
     control: zmq.Socket
-
     pending: dict[StatType, list[bytes]] = {}  # stat_type -> clients waiting
 
     def __init__(self, config: Config, context: zmq.Context, stats: StatsReceiver):
         self.stats = stats
-        stats.add_listener(self)
+        stats.add_listener(StatListener(context, self))
 
-        self.context = context
         self.socket = context.socket(zmq.ROUTER)
         self.socket.bind(config.address)
 
@@ -45,15 +40,6 @@ class ClientHandler:
         Thread-safe method.
         """
         self.control.send_string(END)
-
-    def received(self, type: StatType):
-        """
-        Queues the given stat to be sent to all clients waiting for it.
-        Thread-safe method.
-        """
-        socket: zmq.Socket = self.context.socket(zmq.PAIR)
-        socket.connect("inproc://control")
-        socket.send_string(type)
 
     def __receive(self, poller: zmq.Poller) -> bool:
         """
@@ -107,3 +93,22 @@ class ClientHandler:
         """
         logging.info("Sending response to client")
         self.socket.send_multipart([id, b"", stat.encode()])
+
+
+class StatListener:
+    context: zmq.Context
+    handler: ClientHandler
+    socket: zmq.Socket | None
+
+    def __init__(self, context: zmq.Context, handler: ClientHandler):
+        self.context = context
+        self.handler = handler
+
+    def received(self, type: StatType):
+        """
+        Sends a messaage to the client handler to notify it that a stat was received
+        """
+        if self.socket is None:
+            self.socket = self.context.socket(zmq.PAIR)
+            self.socket.connect("inproc://control")
+        self.socket.send_string(type)

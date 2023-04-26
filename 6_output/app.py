@@ -19,6 +19,7 @@ def main():
     thread = Thread(target=client_handler.run)
     thread.start()
     stat_receiver.run()
+    thread.join()
 
 
 main()
