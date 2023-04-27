@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 DATASET_ID := 190kC3LtexSWKDIYS1IbAoCnrP9oHeE9j
 DATASET_HASH := 8b80b71965721392857021c74bba58c6
-DATASET_FOLDER := client/data/full
+DATASET_FOLDER := client/data
 DATASET_FILE := ${DATASET_FOLDER}/dataset.zip
 SED_EXPR := s/^.*<form[^>]\+\?action=\"\([^\"]\+\?\)\"[^>]*\?>.*\$$/\1/p
 
@@ -25,7 +25,7 @@ get-dataset:
 	fi;
 # The wget downloads from Google Drive. Source: https://superuser.com/a/1542118
 
-	unzip -n ${DATASET_FILE} -d ${DATASET_FOLDER}
+	unzip -n ${DATASET_FILE} -d ${DATASET_FOLDER}/full
 
 build:
 	docker compose build
