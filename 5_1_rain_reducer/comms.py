@@ -8,7 +8,7 @@ class SystemCommunication(SystemCommunicationBase[PartialRainRecords, StatsRecor
 
     OUT_QUEUE = "stats"
 
-    def load_definitions(self):
+    def _load_definitions(self):
         # in
         self._start_consuming_from(self.AVERAGES_QUEUE)
 

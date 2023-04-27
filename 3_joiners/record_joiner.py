@@ -23,6 +23,7 @@ class RecordJoiner:
         logging.info("Receiving weather & stations")
         self.comms.set_callback(self.handle_record)
         self.comms.start_consuming()
+        self.comms.close()
 
     def handle_record(self, record: BasicRecord):
         self.phase = self.phase.handle_record(record)

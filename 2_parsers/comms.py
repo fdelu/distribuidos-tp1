@@ -8,7 +8,7 @@ from common.messages.raw import RawRecord
 
 
 class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
-    EXCHANGE = "raw_batchs"
+    EXCHANGE = "raw_records"
     BATCHS_QUEUE = "raw_batchs"
     END_QUEUE = f"parser_ends_{uuid4()}"
     OUT_EXCHANGE = "basic_records"

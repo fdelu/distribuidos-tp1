@@ -1,3 +1,4 @@
+import logging
 from common.log import setup_logs
 
 from config import Config
@@ -10,6 +11,7 @@ def main():
 
     joiner = RecordJoiner(config)
     joiner.run()
+    logging.info("Exiting gracefully")
 
 
 main()

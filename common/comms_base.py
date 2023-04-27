@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import os
 from functools import partial
 from typing import Any, Callable, TypeVar, Generic, get_args
@@ -17,7 +18,8 @@ class SystemCommunicationBase(Generic[IN, OUT]):
     connection: BlockingConnection
     channel: BlockingChannel
     callback: Callable[[IN], None] | None
-    timers: dict[str, tuple[int, Callable]]  # queue -> timer, callback
+    # queue name -> (callback, timer)
+    timeout_callbacks: dict[str, "TimeoutInfo"]
 
     def __init__(self, config: ConfigBase):
         self.connection = BlockingConnection(
@@ -26,6 +28,7 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         self.channel = self.connection.channel()
         self.channel.basic_qos(prefetch_count=config.prefetch_count)
 
+        self.timeout_callbacks = {}
         self.callback = None
         self.__setup()
 
@@ -40,6 +43,12 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         Signal/Thread-Safe way to stop consuming
         """
         self.connection.add_callback_threadsafe(lambda: self.channel.stop_consuming())
+
+    def close(self):
+        """
+        Closes the connection
+        """
+        self.connection.close()
 
     def set_callback(self, callback: Callable[[IN], None]):
         """
@@ -98,7 +107,9 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         of the given queue was received. If no message is received after the call to
         this method, the callback will be called after timeout seconds.
         """
-        self.timers[queue] = (self.connection.call_later(timeout, callback), callback)
+        info = TimeoutInfo(callback, timeout, None)
+        self.timeout_callbacks[queue] = info
+        self.__set_timeout_timer(info)
 
     def _set_empty_queue_callback(
         self, queue: str, callback: Callable[[], None], **queue_kwargs
@@ -148,17 +159,22 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         if set and acknowledging the message afterwards.
         This method returns when stop_consuming() is called.
         """
-        timer, timeout_callback = self.timers.get(queue, (None, None))
-        if timer is not None:
-            self.connection.remove_timeout(timer)
+        timeout_info = self.timeout_callbacks.get(queue, None)
+        if timeout_info is not None:
+            self.cancel_timer(timeout_info.timer)
 
         if self.callback is not None:
             self.callback(self.__deserialize_record(body.decode()))
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        if timeout_callback is not None:
-            new_timer = self._set_timeout_callback(queue, timeout_callback)
-            self.timers[queue] = (new_timer, timeout_callback)
+        if timeout_info is not None:
+            self.__set_timeout_timer(timeout_info)
+
+    def __set_timeout_timer(self, info: "TimeoutInfo"):
+        """
+        Sets the timer for the given timeout info
+        """
+        info.timer = self.connection.call_later(info.time_seconds, info.callback)
 
     def __deserialize_record(self, message: str) -> IN:
         """
@@ -173,3 +189,15 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         """
         out_type = get_args(self.__orig_bases__[0])[1]  # type: ignore
         return serialize(message, set_type=out_type)
+
+
+@dataclass
+class TimeoutInfo:
+    """
+    Stores information about a timeout callback.
+    See SystemCommunicationBase._set_timeout_callback()
+    """
+
+    callback: Callable[[], None]
+    time_seconds: float
+    timer: Any | None

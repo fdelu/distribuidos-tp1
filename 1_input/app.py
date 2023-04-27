@@ -1,3 +1,4 @@
+import logging
 import zmq
 
 from common.log import setup_logs
@@ -16,6 +17,8 @@ def main():
 
     handler = ClientHandler(config, socket)
     handler.run()
+    socket.close()
+    logging.info("Exiting gracefully")
 
 
 main()

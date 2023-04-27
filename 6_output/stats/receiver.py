@@ -1,10 +1,8 @@
-import json
 import logging
 from typing import Protocol
-from dataclasses import dataclass
-from threading import Lock
 from common.messages.stats import RainAverages, StatType, StatsRecord
 
+from stats import Stats
 from config import Config
 from comms import SystemCommunication
 
@@ -17,23 +15,14 @@ class StatListener(Protocol):
         ...
 
 
-@dataclass
-class Stats:
-    rain_averages: RainAverages | None = None
-    lock: Lock = Lock()
-
-    def all_done(self):
-        return self.rain_averages is not None
-
-
 class StatsReceiver:
     comms: SystemCommunication
     stats: Stats
     listeners: list[StatListener] = []
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, stats: Stats):
         self.comms = SystemCommunication(config)
-        self.stats = Stats()
+        self.stats = stats
 
     def add_listener(self, listener: StatListener):
         self.listeners.append(listener)
@@ -41,18 +30,6 @@ class StatsReceiver:
     def __notify_listeners(self, type: StatType):
         for listener in self.listeners:
             listener.received(type)
-
-    def get(self, type: StatType) -> str | None:
-        result: StatsRecord | None = None
-        with self.stats.lock:
-            if type == StatType.RAIN:
-                result = self.stats.rain_averages
-            else:
-                raise NotImplementedError()
-
-        if result is None:
-            return None
-        return json.dumps(result.data)
 
     def run(self):
         self.comms.set_callback(self.handle_record)
@@ -67,5 +44,4 @@ class StatsReceiver:
     def handle_record(self, record: StatsRecord):
         record.be_handled_by(self)
         if self.stats.all_done():
-            self.comms.stop_consuming()
-            logging.info("Received all stats, stopped consuming")
+            logging.info("Received all stats")

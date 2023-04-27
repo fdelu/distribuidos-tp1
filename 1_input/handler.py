@@ -48,10 +48,13 @@ class ClientHandler:
             self.comms.send(message)
             count += len(msg.splitlines())
             msg = self.socket.recv_string()
-        logging.info(f"{self.phase} | {city} | Received {count} {record_type} records")
+        logging.info(
+            f"{self.phase} | {city} | Received and sent {count} {record_type} records"
+        )
 
     def __handle_end(self):
         self.comms.send(End())
+        self.stop_event.set()
 
     def __validate_phase(self, record_type: RecordType) -> bool:
         if (
@@ -81,3 +84,5 @@ class ClientHandler:
                 self.__handle_end()
             else:
                 self.__handle_batch(record_type, city)
+        logging.info("Finished receiving data")
+        self.comms.close()

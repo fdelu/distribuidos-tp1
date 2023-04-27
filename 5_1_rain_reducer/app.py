@@ -1,3 +1,4 @@
+import logging
 from reducer import AverageReducer
 from common.log import setup_logs
 
@@ -12,6 +13,7 @@ def main():
 
     counter = AverageReducer(config)
     counter.run()
+    logging.info("Exiting gracefully")
 
 
 main()

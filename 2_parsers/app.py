@@ -1,3 +1,4 @@
+import logging
 from common.log import setup_logs
 
 from config import Config
@@ -12,6 +13,7 @@ def main():
 
     parser = RecordParser(config)
     parser.run()
+    logging.info("Exiting gracefully")
 
 
 main()

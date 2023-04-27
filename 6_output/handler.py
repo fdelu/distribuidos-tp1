@@ -1,72 +1,111 @@
+import json
 import logging
+from threading import Thread
 import zmq
 
+from common.messages.stats import StatType, StatsRecord
+
 from config import Config
-from stats_receiver import StatType, StatsReceiver
+from stats import Stats
 
-END = "END"
+CONTROL_ADDR = "inproc://control"
+END_MSG = "END"
 
 
-class ClientHandler:
-    stats: StatsReceiver
-    socket: zmq.Socket
-    control: zmq.Socket
-    pending: dict[StatType, list[bytes]] = {}  # stat_type -> clients waiting
+class ClientHandler(Thread):
+    context: zmq.Context
+    stats: Stats
+    config: Config
 
-    def __init__(self, config: Config, context: zmq.Context, stats: StatsReceiver):
+    control_socket: zmq.Socket | None = None
+
+    def __init__(self, config: Config, context: zmq.Context, stats: Stats):
+        """
+        Initializes the client handler. Must be called from the main thread.
+        """
+        super().__init__()
         self.stats = stats
-        stats.add_listener(StatListener(context, self))
+        self.context = context
+        self.config = config
 
-        self.socket = context.socket(zmq.ROUTER)
-        self.socket.bind(config.address)
-
-        self.control = context.socket(zmq.PAIR)
-        self.control.bind("inproc://control")
+        self.control_socket = None
 
     def run(self):
         logging.info("Client handler started")
-        poller = zmq.Poller()
-        poller.register(self.socket, zmq.POLLIN)
-        poller.register(self.control, zmq.POLLIN)
-        stop = False
-        while not stop:
-            stop = self.__receive(poller)
-        self.socket.close()
-        self.control.close()
+        ClientHandlerInternal(self.context, self.config, self.stats).run()
 
     def stop(self):
         """
-        Stops a runnin server
-        Thread-safe method.
+        Stops a running server
+        Must be called from the main thread.
         """
-        self.control.send_string(END)
+        if self.control_socket is None:
+            self.control_socket = self.__connect_control()
+        self.control_socket.send_string(END_MSG)
+        self.control_socket.close()
+
+    def received(self, type: StatType):
+        """
+        Executed when a stat is received.
+        Must be called from the main thread.
+        """
+        if self.control_socket is None:
+            self.control_socket = self.__connect_control()
+        self.control_socket.send_string(type)
+
+    def __connect_control(self) -> zmq.Socket:
+        socket = self.context.socket(zmq.PAIR)
+        socket.connect(CONTROL_ADDR)
+        return socket
+
+
+class ClientHandlerInternal:
+    """
+    Parts of the client handler that can be executed in a separate thread
+    """
+
+    clients_socket: zmq.Socket
+    control_socket: zmq.Socket
+
+    stats: Stats
+    pending_clients: dict[StatType, list[bytes]] = {}  # stat_type -> clients waiting
+
+    def __init__(self, context: zmq.Context, config: Config, stats: Stats):
+        self.clients_socket = context.socket(zmq.ROUTER)
+        self.clients_socket.bind(config.address)
+        logging.info(f"Binded client socket to {config.address}")
+        self.control_socket = context.socket(zmq.PAIR)
+        self.control_socket.bind(CONTROL_ADDR)
+
+        self.stats = stats
+
+    def run(self):
+        poller = zmq.Poller()
+        poller.register(self.clients_socket, zmq.POLLIN)
+        poller.register(self.control_socket, zmq.POLLIN)
+
+        stop = False
+        while not stop:
+            stop = self.__receive(poller)
+
+        self.clients_socket.close()
+        self.control_socket.close()
 
     def __receive(self, poller: zmq.Poller) -> bool:
         """
         Receives a message. Returns True if the server should stop.
         """
         ready = [x[0] for x in poller.poll()]
-        if self.control in ready:
-            msg = self.control.recv_string()
-            if msg == END:
+        if self.control_socket in ready:
+            msg = self.control_socket.recv_string()
+            if msg == END_MSG:
                 return True
             self.__handle_received(StatType(msg))
 
-        if self.socket in ready:
-            id, _, body = self.socket.recv_multipart()
+        if self.clients_socket in ready:
+            id, _, body = self.clients_socket.recv_multipart()
             self.__handle_client(id, body)
         return False
-
-    def __handle_received(self, type: StatType):
-        """
-        Sends a stat to all clients waiting for it when it is received
-        """
-        waiting = self.pending.pop(type, [])
-        for id in waiting:
-            stat = self.stats.get(type)
-            if stat is None:
-                raise RuntimeError("Stat was received but not available")
-            self.__send_stat(id, stat)
 
     def __handle_client(self, id: bytes, msg: bytes):
         """
@@ -79,36 +118,38 @@ class ClientHandler:
             type = StatType(msg_str)
         except ValueError:
             logging.warning(f"Invalid stat type was requested: {msg_str}")
-            self.socket.send_multipart([id, b"", b"Invalid stat type"])
+            self.clients_socket.send_multipart([id, b"", b"Invalid stat type"])
             return
-        stat = self.stats.get(type)
+        stat = self.__get_stat(type)
         if stat is None:
-            self.pending.setdefault(type, []).append(id)
+            self.pending_clients.setdefault(type, []).append(id)
         else:
             self.__send_stat(id, stat)
 
-    def __send_stat(self, id: bytes, stat: str):
+    def __handle_received(self, type: StatType):
+        """
+        Sends a stat to all clients waiting for it when it is received
+        """
+        waiting = self.pending_clients.pop(type, [])
+        logging.info(f"Sending received stat '{type}' to {len(waiting)} clients")
+        stat = self.__get_stat(type)
+        if stat is None:
+            raise RuntimeError("Stat was received but it is not available")
+        for id in waiting:
+            self.__send_stat(id, stat)
+
+    def __get_stat(self, type: StatType) -> StatsRecord | None:
+        """
+        Returns a stat if it is available
+        """
+        with self.stats.lock:
+            if type == StatType.RAIN:
+                return self.stats.rain_averages
+            return None
+
+    def __send_stat(self, id: bytes, stat: StatsRecord):
         """
         Sends a stat to a client
         """
         logging.info("Sending response to client")
-        self.socket.send_multipart([id, b"", stat.encode()])
-
-
-class StatListener:
-    context: zmq.Context
-    handler: ClientHandler
-    socket: zmq.Socket | None
-
-    def __init__(self, context: zmq.Context, handler: ClientHandler):
-        self.context = context
-        self.handler = handler
-
-    def received(self, type: StatType):
-        """
-        Sends a messaage to the client handler to notify it that a stat was received
-        """
-        if self.socket is None:
-            self.socket = self.context.socket(zmq.PAIR)
-            self.socket.connect("inproc://control")
-        self.socket.send_string(type)
+        self.clients_socket.send_multipart([id, b"", json.dumps(stat.data).encode()])

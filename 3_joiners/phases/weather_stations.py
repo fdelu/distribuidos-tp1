@@ -4,11 +4,14 @@ from common.messages.basic import BasicStation, BasicTrip, BasicWeather
 from common.messages.joined import StationInfo
 
 from phases import Phase
-from phases.trips import TripsPhase
+from phases.trips import TripsPhase, WeatherData, StationData
 
 
 class WeatherStationsPhase(Phase):
-    parsers_done: int = 0
+    parsers_sending_trips: int = 0
+    ends_received: int = 0
+    weather: WeatherData = {}
+    stations: StationData = {}
 
     def handle_station(self, station: BasicStation) -> Phase:
         info = StationInfo(station.name, station.latitude, station.longitude)
@@ -22,22 +25,27 @@ class WeatherStationsPhase(Phase):
         return self
 
     def handle_trips_start(self) -> Phase:
-        self.parsers_done += 1
-        if self.parsers_done < self.config.parsers_count:
-            logging.info(
-                "A parser finished sending stations and weather, waiting for others"
-                f" ({self.parsers_done}/{self.config.parsers_count})"
-            )
+        self.parsers_sending_trips += 1
+        logging.info(
+            "A parser finished sending weather & stations"
+            f" ({self.parsers_sending_trips}/{self.config.parsers_count})"
+        )
+        if self.parsers_sending_trips < self.config.parsers_count:
             return self
 
         logging.info("Receiving trips")
         self.comms.start_consuming_trips()
-        return TripsPhase(self.comms, self.config)
+        trips_phase: Phase = TripsPhase(
+            self.comms, self.config, self.weather, self.stations
+        )
+        for _ in range(self.ends_received):
+            trips_phase = trips_phase.handle_end()
+        return trips_phase
 
     def handle_trip(self, trip: BasicTrip) -> Phase:
         logging.warn("Unexpected Trip received while receiving weather & stations")
         return self
 
     def handle_end(self) -> Phase:
-        logging.warn("Unexpected End received before getting any trips")
+        self.ends_received += 1
         return self

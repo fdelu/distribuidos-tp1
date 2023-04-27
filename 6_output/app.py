@@ -1,9 +1,9 @@
 import zmq
-from threading import Thread
 
 from common.log import setup_logs
 
-from stats_receiver import StatsReceiver
+from stats import Stats
+from stats.receiver import StatsReceiver
 from handler import ClientHandler
 from config import Config
 
@@ -13,13 +13,16 @@ def main():
     setup_logs(config.log_level)
     context = zmq.Context()
 
-    stat_receiver = StatsReceiver(config)
-    client_handler = ClientHandler(config, context, stat_receiver)
+    stats = Stats()
+    stat_receiver = StatsReceiver(config, stats)
+    client_handler = ClientHandler(config, context, stats)
+    stat_receiver.add_listener(client_handler)
 
-    thread = Thread(target=client_handler.run)
-    thread.start()
+    client_handler.start()
     stat_receiver.run()
-    thread.join()
+
+    client_handler.stop()
+    client_handler.join()
 
 
 main()

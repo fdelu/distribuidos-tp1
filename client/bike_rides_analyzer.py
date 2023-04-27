@@ -3,7 +3,6 @@ import logging
 from typing import Any
 import zmq
 
-from common.log import setup_logs
 from common.messages import RecordType
 from common.phase import Phase
 from common.messages.raw import RECORDS_SPLIT_CHAR, HEADER_SPLIT_CHAR
@@ -16,16 +15,14 @@ class BikeRidesAnalyzer:
     phase: Phase
     config: Config
 
-    def __init__(self):
-        self.phase = Phase.StationsWeather
-        self.config = Config()
-        setup_logs(self.config.log_level)
+    context: zmq.Context
+    input_socket: zmq.Socket | None = None
+    output_socket: zmq.Socket | None = None
 
-        context = zmq.Context()
-        self.input_socket = context.socket(zmq.PAIR)
-        self.input_socket.connect(self.config.input_address)
-        self.output_socket = context.socket(zmq.REQ)
-        self.output_socket.connect(self.config.output_address)
+    def __init__(self, config: Config):
+        self.config = config
+        self.phase = Phase.StationsWeather
+        self.context = zmq.Context()
 
     def send_stations(self, city: str, file_path: str):
         logging.info(f"Sending stations for {city}")
@@ -54,18 +51,34 @@ class BikeRidesAnalyzer:
     def process_results(self):
         if self.phase != Phase.Trips:
             raise ValueError(f"Can't process results in this phase: {self.phase}")
+        if self.input_socket is None:
+            self.input_socket = self.__connect_input_socket()
         self.phase = Phase.End
         self.input_socket.send_string(RecordType.END)
 
     def get_rain_averages(self) -> dict[str, float]:
         return self.__get_stat(StatType.RAIN)
 
+    def __connect_input_socket(self) -> zmq.Socket:
+        input_socket = self.context.socket(zmq.PAIR)
+        logging.info(f"Connecting to input on {self.config.input_address}")
+        input_socket.connect(self.config.input_address)
+        return input_socket
+
+    def __connect_output_socket(self) -> zmq.Socket:
+        output_socket = self.context.socket(zmq.REQ)
+        logging.info(f"Connecting to output on {self.config.output_address}")
+        output_socket.connect(self.config.output_address)
+        return output_socket
+
     def __get_stat(self, stat: StatType) -> Any:
         if self.phase != Phase.End:
             raise ValueError(f"Can't get stat in this phase: {self.phase}")
+        if self.output_socket is None:
+            self.output_socket = self.__connect_output_socket()
 
-        logging.info(f"Requesting stat {stat}")
         self.output_socket.send_string(stat)
+        logging.info(f"Requesting stat {stat}")
         response = self.output_socket.recv_string()
         logging.info(f"Stat {stat} received")
         return json.loads(response)
@@ -73,6 +86,9 @@ class BikeRidesAnalyzer:
     def __send_from_file(self, city: str, path: str, type: RecordType) -> int:
         count = -1  # don't count the header
         batch = []
+
+        if self.input_socket is None:
+            self.input_socket = self.__connect_input_socket()
 
         self.input_socket.send_string(f"{type}{HEADER_SPLIT_CHAR}{city}")
 

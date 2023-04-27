@@ -1,6 +1,7 @@
-from aggregator import RainedAggregator
+import logging
 from common.log import setup_logs
 
+from aggregator import RainedAggregator
 from config import Config
 
 
@@ -10,6 +11,7 @@ def main():
 
     counter = RainedAggregator(config)
     counter.run()
+    logging.info("Exiting gracefully")
 
 
 main()

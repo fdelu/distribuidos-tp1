@@ -4,11 +4,32 @@ from common.messages import End
 from common.messages.basic import BasicStation, BasicTrip, BasicWeather
 from common.messages.joined import JoinedTrip, StationInfo
 
+from comms import SystemCommunication
+from config import Config
 from phases import Phase
+
+# city -> day -> precipitation
+WeatherData = dict[str, dict[str, float]]
+
+# city -> (station code, year) -> station info
+StationData = dict[str, dict[tuple[str, str], StationInfo]]
 
 
 class TripsPhase(Phase):
     ends_received: int = 0
+    weather: WeatherData
+    stations: StationData
+
+    def __init__(
+        self,
+        comms: SystemCommunication,
+        config: Config,
+        weather_data: WeatherData,
+        station_data: StationData,
+    ):
+        super().__init__(comms, config)
+        self.weather = weather_data
+        self.stations = station_data
 
     def handle_station(self, station: BasicStation) -> Phase:
         logging.warn("Unexpected Station received while receiving trips")
@@ -42,11 +63,11 @@ class TripsPhase(Phase):
 
     def handle_end(self) -> Phase:
         self.ends_received += 1
+        logging.info(
+            "A parser finished sending trips"
+            f" ({self.ends_received}/{self.config.parsers_count})"
+        )
         if self.ends_received < self.config.parsers_count:
-            logging.info(
-                "A parser finished sending trips, waiting for others"
-                f" ({self.ends_received}/{self.config.parsers_count})"
-            )
             return self
         logging.info("All parsers finished sending trips, waiting until all are joined")
         self.comms.set_all_trips_done_callback(self._all_trips_done)
@@ -73,7 +94,6 @@ class TripsPhase(Phase):
         station_info = self.stations[city].get((code, year), None)
         if station_info is None:
             logging.warn(f"Missing station info for code {code}, year {year} ({city})")
-            logging.critical(self.stations)
         return station_info
 
     def _all_trips_done(self):

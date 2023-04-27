@@ -34,7 +34,7 @@ def parse_trip(row: list[str], indexes: dict[str, int], city: str) -> BasicTrip:
     start_date = row[indexes["start_date"]].split(" ")[0]
     return BasicTrip(
         start_date=start_date,
-        duration_sec=min(float(row[indexes["duration_sec"]]), 0),
+        duration_sec=max(float(row[indexes["duration_sec"]]), 0),
         city=city,
         start_station_code=row[indexes["start_station_code"]],
         end_station_code=row[indexes["end_station_code"]],

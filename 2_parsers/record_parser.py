@@ -20,6 +20,7 @@ class RecordParser:
         logging.info("Receiving weather & stations")
         self.comms.set_callback(self.handle_record)
         self.comms.start_consuming()
+        self.comms.close()
 
     def handle_record(self, raw_record: RawRecord):
-        self.phase.handle_record(raw_record)
+        self.phase = self.phase.handle_record(raw_record)

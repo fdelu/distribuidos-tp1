@@ -25,8 +25,8 @@ class Phase:
     def handle_end(self) -> "Phase":
         raise NotImplementedError()
 
-    def handle_record(self, raw_record: RawRecord):
-        raw_record.be_handled_by(self)
+    def handle_record(self, raw_record: RawRecord) -> "Phase":
+        return raw_record.be_handled_by(self)
 
     def _send_parsed(
         self,

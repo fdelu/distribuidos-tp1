@@ -14,7 +14,7 @@ class SystemCommunication(SystemCommunicationBase[JoinedRecord, PartialRainRecor
 
     OUT_QUEUE = "partial_rain_averages"
 
-    def load_definitions(self):
+    def _load_definitions(self):
         # in
         self._start_consuming_from(self.TRIPS_QUEUE)
 

@@ -21,10 +21,12 @@ class AverageReducer:
     def run(self):
         self.comms.set_callback(self.handle_record)
         self.comms.start_consuming()
+        self.comms.close()
 
     def handle_average(self, avg: PartialRainAverages):
         for date, date_average in avg.averages.items():
             current = self.averages.setdefault(date, DateInfo(0, 0))
+            logging.debug(f"Merging {current} with {date_average}")
 
             total_count = current.count + date_average.count
             current_factor = current.count / total_count
@@ -40,7 +42,7 @@ class AverageReducer:
         self.ends_received += 1
         if self.ends_received < self.config.aggregators_count:
             logging.info(
-                "An aggregator finished sending values, waiting for others"
+                "An aggregator finished sending averages"
                 f" ({self.ends_received}/{self.config.aggregators_count})"
             )
             return
