@@ -25,8 +25,8 @@ class SystemCommunication(SystemCommunicationBase[BasicRecord, JoinedRecord]):
         self.channel.queue_bind(self.OTHER_QUEUE, self.EXCHANGE, RecordType.END)
         self._start_consuming_from(self.OTHER_QUEUE)
 
-    def send(self, record: JoinedRecord):
-        self._send_to(record, self.OUT_EXCHANGE, record.get_routing_key())
+    def _get_routing_details(self, record: JoinedRecord):
+        return self.OUT_EXCHANGE, record.get_routing_key()
 
     def start_consuming_trips(self):
         self._start_consuming_from(self.TRIPS_QUEUE)

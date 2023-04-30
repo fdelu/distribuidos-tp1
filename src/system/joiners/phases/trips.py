@@ -63,7 +63,7 @@ class TripsPhase(Phase):
 
     def handle_end(self) -> Phase:
         self.ends_received += 1
-        logging.info(
+        logging.debug(
             "A parser finished sending trips"
             f" ({self.ends_received}/{self.config.parsers_count})"
         )

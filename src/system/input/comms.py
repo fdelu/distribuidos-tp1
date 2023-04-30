@@ -8,5 +8,5 @@ class SystemCommunication(SystemCommunicationBase[None, RawRecord]):
     def _load_definitions(self):
         pass
 
-    def send(self, record: RawRecord):
-        self._send_to(record, self.OUT_EXCHANGE, record.get_routing_key())
+    def _get_routing_details(self, record: RawRecord):
+        return self.OUT_EXCHANGE, record.get_routing_key()

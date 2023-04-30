@@ -21,8 +21,8 @@ class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
         self.channel.queue_bind(self.END_QUEUE, self.EXCHANGE, BaseRecordType.END)
         self._start_consuming_from(self.END_QUEUE)
 
-    def send(self, record: BasicRecord):
-        self._send_to(record, self.OUT_EXCHANGE, record.get_routing_key())
+    def _get_routing_details(self, record: BasicRecord):
+        return self.OUT_EXCHANGE, record.get_routing_key()
 
     def set_all_batchs_done_callback(self, callback: Callable[[], None]):
         self._set_empty_queue_callback(self.BATCHS_QUEUE, callback)

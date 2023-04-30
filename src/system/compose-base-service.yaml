@@ -4,6 +4,7 @@ services:
     build:
       context: ..
       dockerfile: system/Dockerfile
+      target: base
     volumes:
       - type: bind
         source: ../../config.ini

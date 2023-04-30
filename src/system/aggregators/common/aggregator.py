@@ -1,25 +1,42 @@
 import logging
-from typing import Any
+from typing import Any, Generic, Protocol, TypeVar
 
 from common.messages import End
 from common.messages.joined import JoinedRecord, JoinedTrip
-from common.messages.rain import DateInfo, PartialRainAverages
+from common.comms_base import SystemCommunicationBase
 
-from .comms import SystemCommunication
 from .config import Config
 
+T = TypeVar("T", covariant=True, bound=End)
 
-class RainedAggregator:
-    comms: SystemCommunication
-    averages: dict[str, DateInfo]
-    timer: Any | None
+
+class Aggregator(Protocol[T]):
+    def handle_trip(self, trip: JoinedTrip):
+        ...
+
+    def get_value(self) -> T:
+        ...
+
+    def reset(self):
+        ...
+
+
+class AggregationHandler(Generic[T]):
+    comms: SystemCommunicationBase[JoinedTrip, T]
+    aggregator: Aggregator[T]
     config: Config
+    timer: Any | None
     ends_received: int
 
-    def __init__(self, config: Config):
-        self.comms = SystemCommunication(config)
+    def __init__(
+        self,
+        comms: SystemCommunicationBase[JoinedTrip, T],
+        aggregator: Aggregator,
+        config: Config,
+    ):
         self.config = config
-        self.averages: dict[str, DateInfo] = {}
+        self.comms = comms
+        self.aggregator = aggregator
         self.ends_received = 0
         self.timer = None
 
@@ -29,17 +46,14 @@ class RainedAggregator:
         self.comms.close()
 
     def handle_trip(self, trip: JoinedTrip):
-        date_average = self.averages.setdefault(trip.start_date, DateInfo(0, 0))
-        date_average.count += 1
-        delta = (trip.duration_sec - date_average.average_duration) / date_average.count
-        date_average.average_duration += delta
+        self.aggregator.handle_trip(trip)
 
         if self.timer is None:
             self.setup_timer()
 
     def handle_end(self):
         self.ends_received += 1
-        logging.info(
+        logging.debug(
             "A joiner finished sending trips"
             f" ({self.ends_received}/{self.config.joiners_count})"
         )
@@ -71,7 +85,6 @@ class RainedAggregator:
         )
 
     def send_averages(self):
-        logging.info("Sending partial averages")
-        logging.debug(f"Values sent: {self.averages}")
-        self.comms.send(PartialRainAverages(self.averages))
+        logging.debug("Sending partial results")
+        self.comms.send(self.aggregator.get_value())
         self.averages = {}

@@ -63,7 +63,8 @@ services:
       service: base
     build:
       args:
-        WORKDIR: aggregators
+        WORKDIR: aggregators/rain
+      target: aggregators
     deploy:
       mode: replicated
       replicas: ${RAIN_AGGREGATORS_SCALE}

@@ -26,7 +26,7 @@ class WeatherStationsPhase(Phase):
 
     def handle_trips_start(self) -> Phase:
         self.parsers_sending_trips += 1
-        logging.info(
+        logging.debug(
             "A parser finished sending weather & stations"
             f" ({self.parsers_sending_trips}/{self.config.parsers_count})"
         )

@@ -39,14 +39,14 @@
             "arguments": {}
         },
         {
-            "name": "rained_trips",
+            "name": "rain_trips",
             "vhost": "/",
             "durable": false,
             "auto_delete": false,
             "arguments": {}
         },
         {
-            "name": "partial_rain_averages",
+            "name": "rain_aggregated",
             "vhost": "/",
             "durable": false,
             "auto_delete": false,
@@ -109,7 +109,7 @@
         {
             "source": "joined_records",
             "vhost": "/",
-            "destination": "rained_trips",
+            "destination": "rain_trips",
             "destination_type": "queue",
             "routing_key": "trip.*.*.true",
             "arguments": {}

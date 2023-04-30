@@ -4,7 +4,7 @@ from common.messages.stats import StatsRecord
 
 
 class SystemCommunication(SystemCommunicationBase[PartialRainRecords, StatsRecord]):
-    AVERAGES_QUEUE = "partial_rain_averages"
+    AVERAGES_QUEUE = "rain_aggregated"
 
     OUT_QUEUE = "stats"
 
@@ -12,5 +12,5 @@ class SystemCommunication(SystemCommunicationBase[PartialRainRecords, StatsRecor
         # in
         self._start_consuming_from(self.AVERAGES_QUEUE)
 
-    def send(self, record: StatsRecord):
-        self._send_to(record, "", self.OUT_QUEUE)
+    def _get_routing_details(self, record: StatsRecord):
+        return "", self.OUT_QUEUE

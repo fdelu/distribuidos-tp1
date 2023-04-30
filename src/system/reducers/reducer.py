@@ -41,7 +41,7 @@ class AverageReducer:
     def handle_end(self):
         self.ends_received += 1
         if self.ends_received < self.config.aggregators_count:
-            logging.info(
+            logging.debug(
                 "An aggregator finished sending averages"
                 f" ({self.ends_received}/{self.config.aggregators_count})"
             )

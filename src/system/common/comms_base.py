@@ -4,7 +4,7 @@ from functools import partial
 from typing import Any, Callable, TypeVar, Generic, get_args
 from pika import BlockingConnection, ConnectionParameters, spec
 from pika.adapters.blocking_connection import BlockingChannel
-from common.config import ConfigBase
+from common.config_base import ConfigBase
 
 from common.serde import serialize, deserialize
 
@@ -69,15 +69,12 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         """
         self.connection.remove_timeout(timer)
 
-    def _send_to(self, record: OUT, exchange: str, routing_key: str):
+    def send(self, record: OUT):
         """
-        Sends a record with the given exchange and routing keys
+        Sends a record to the appropriate queue
         """
-        self.channel.basic_publish(
-            exchange,
-            routing_key,
-            self.__serialize_record(record).encode(),
-        )
+        exchange, routing_key = self._get_routing_details(record)
+        self.__send_to(record, exchange, routing_key)
 
     def _load_definitions(self):
         """
@@ -85,7 +82,7 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         """
         raise NotImplementedError()
 
-    def _get_output_names(self, record: OUT) -> tuple[str, str]:
+    def _get_routing_details(self, record: OUT) -> tuple[str, str]:
         """
         Should return a tuple of (exchange_name, routing_key) for this record
         """
@@ -120,6 +117,16 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         self._set_timeout_callback(
             queue,
             lambda: self.__check_messages_left(queue, callback, **queue_kwargs),
+        )
+
+    def __send_to(self, record: OUT, exchange: str, routing_key: str):
+        """
+        Sends a record with the given exchange and routing keys
+        """
+        self.channel.basic_publish(
+            exchange,
+            routing_key,
+            self.__serialize_record(record).encode(),
         )
 
     def __check_messages_left(

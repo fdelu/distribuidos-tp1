@@ -1,4 +1,4 @@
-FROM python:3.11.3-bullseye
+FROM python:3.11.3-bullseye AS base
 
 COPY shared /app/shared
 COPY system/common /app/system/common
@@ -14,4 +14,10 @@ COPY system/${WORKDIR} .
 RUN pip install -r requirements.txt
 
 WORKDIR /app
-ENTRYPOINT python3 -m system.${WORKDIR}.app
+SHELL ["/bin/bash", "-c"]
+# replace / in WORKDIR with .
+ENTRYPOINT python3 -m system.${WORKDIR//\//.}.app
+
+FROM base AS aggregators
+COPY system/aggregators/common /app/system/aggregators/common
+
