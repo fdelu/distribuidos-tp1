@@ -1,0 +1,13 @@
+version: "3"
+services:
+  base:
+    build:
+      context: ..
+      dockerfile: system/Dockerfile
+    volumes:
+      - type: bind
+        source: ../../config.ini
+        target: /config.ini
+    env_file: ../../.env
+    networks:
+      - internal_net

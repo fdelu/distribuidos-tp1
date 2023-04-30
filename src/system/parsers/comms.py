@@ -1,0 +1,28 @@
+from uuid import uuid4
+from typing import Callable
+
+from common.messages.basic import BasicRecord
+from common.comms_base import SystemCommunicationBase
+from common.messages import BaseRecordType
+from common.messages.raw import RawRecord
+
+
+class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
+    EXCHANGE = "raw_records"
+    BATCHS_QUEUE = "raw_batchs"
+    END_QUEUE = f"parser_ends_{uuid4()}"
+    OUT_EXCHANGE = "basic_records"
+
+    def _load_definitions(self):
+        # in
+        self._start_consuming_from(self.BATCHS_QUEUE)
+
+        self.channel.queue_declare(self.END_QUEUE, exclusive=True)
+        self.channel.queue_bind(self.END_QUEUE, self.EXCHANGE, BaseRecordType.END)
+        self._start_consuming_from(self.END_QUEUE)
+
+    def send(self, record: BasicRecord):
+        self._send_to(record, self.OUT_EXCHANGE, record.get_routing_key())
+
+    def set_all_batchs_done_callback(self, callback: Callable[[], None]):
+        self._set_empty_queue_callback(self.BATCHS_QUEUE, callback)

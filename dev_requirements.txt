@@ -1,0 +1,3 @@
+pika
+zmq
+pika-stubs
