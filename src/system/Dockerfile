@@ -21,3 +21,5 @@ ENTRYPOINT python3 -m system.${WORKDIR//\//.}.app
 FROM base AS aggregators
 COPY system/aggregators/common /app/system/aggregators/common
 
+FROM base AS reducers
+COPY system/reducers/common /app/system/reducers/common

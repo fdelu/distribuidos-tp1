@@ -54,10 +54,10 @@ services:
       mode: replicated
       replicas: ${JOINERS_SCALE}
     depends_on:
-      rain_aggregators:
+      rain-aggregators:
         condition: service_healthy
 
-  rain_aggregators:
+  rain-aggregators:
     extends:
       file: src/system/compose-base-service.yaml
       service: base
@@ -72,13 +72,14 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  rain_reducer:
+  rain-reducer:
     extends:
       file: src/system/compose-base-service.yaml
       service: base
     build:
       args:
-        WORKDIR: reducers
+        WORKDIR: reducers/rain
+      target: reducers
     depends_on:
       rabbitmq:
         condition: service_healthy

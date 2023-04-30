@@ -17,11 +17,11 @@ class PartialRainAverages:
     averages: dict[str, DateInfo]  # start_date -> DateInfo
 
     def be_handled_by(self, handler: "RainRecordHandler[T]") -> T:
-        return handler.handle_average(self)
+        return handler.handle_aggregated(self)
 
 
 class RainRecordHandler(Protocol[T]):
-    def handle_average(self, trip: PartialRainAverages) -> T:
+    def handle_aggregated(self, trip: PartialRainAverages) -> T:
         ...
 
 
