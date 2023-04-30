@@ -1,27 +1,25 @@
 import logging
 
-from common.messages.basic import BasicStation, BasicTrip, BasicWeather
-from common.messages.joined import StationInfo
+from common.messages.basic import (
+    BasicStation,
+    BasicTrip,
+    BasicWeather,
+)
 
 from . import Phase
-from .trips import TripsPhase, WeatherData, StationData
+from .trips import TripsPhase
 
 
 class WeatherStationsPhase(Phase):
     parsers_sending_trips: int = 0
     ends_received: int = 0
-    weather: WeatherData = {}
-    stations: StationData = {}
 
     def handle_station(self, station: BasicStation) -> Phase:
-        info = StationInfo(station.name, station.latitude, station.longitude)
-        stations = self.stations.setdefault(station.city, {})
-        stations[(station.code, station.year)] = info
+        self.joiner.handle_station(station)
         return self
 
     def handle_weather(self, weather: BasicWeather) -> "Phase":
-        weathers = self.weather.setdefault(weather.city, {})
-        weathers[weather.date] = weather.precipitation
+        self.joiner.handle_weather(weather)
         return self
 
     def handle_trips_start(self) -> Phase:
@@ -35,9 +33,7 @@ class WeatherStationsPhase(Phase):
 
         logging.info("Receiving trips")
         self.comms.start_consuming_trips()
-        trips_phase: Phase = TripsPhase(
-            self.comms, self.config, self.weather, self.stations
-        )
+        trips_phase: Phase = TripsPhase(self.comms, self.config, self.joiner)
         for _ in range(self.ends_received):
             trips_phase = trips_phase.handle_end()
         return trips_phase

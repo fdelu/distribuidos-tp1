@@ -1,10 +1,10 @@
 from typing import Protocol, TypeVar
 from dataclasses import dataclass
 
-from shared.messages import RecordType
-from common.messages import End
+from common.messages import End, RecordType
 
 T = TypeVar("T", covariant=True)
+U = TypeVar("U", contravariant=True)
 
 
 @dataclass
@@ -15,27 +15,39 @@ class StationInfo:
 
 
 @dataclass()
-class JoinedTrip:
-    start_date: str
-    start_station: StationInfo
-    end_station: StationInfo
-    rained: bool
-    duration_sec: float
-    year: str
+class JoinedRainTrip:
     city: str
+    start_date: str
+    duration_sec: float
 
-    def get_routing_key(self) -> str:
-        return ".".join(
-            str(x).lower() for x in (RecordType.TRIP, self.city, self.year, self.rained)
-        )
+    def be_handled_by(self, handler: "JoinedRecordHandler[T, JoinedRainTrip]") -> T:
+        return handler.handle_joined(self)
 
-    def be_handled_by(self, handler: "JoinedRecordHandler[T]") -> T:
-        return handler.handle_trip(self)
+    def get_routing_key(self):
+        return RecordType.TRIP
 
 
-class JoinedRecordHandler(Protocol[T]):
-    def handle_trip(self, trip: JoinedTrip) -> T:
+JoinedRainRecord = JoinedRainTrip | End
+
+
+@dataclass
+class JoinedCityTrip:
+    def be_handled_by(self, handler: "JoinedRecordHandler[T, JoinedCityTrip]") -> T:
+        return handler.handle_joined(self)
+
+    def get_routing_key(self):
+        return RecordType.TRIP
+
+
+JoinedCityRecord = JoinedCityTrip | End
+
+
+class JoinedRecordHandler(Protocol[T, U]):
+    def handle_joined(self, trip: U) -> T:
         ...
 
 
-JoinedRecord = JoinedTrip | End
+JoinedRecord = JoinedRainRecord | JoinedCityRecord
+GenericJoinedRecord = TypeVar(
+    "GenericJoinedRecord", JoinedRainTrip, JoinedCityTrip, contravariant=True
+)

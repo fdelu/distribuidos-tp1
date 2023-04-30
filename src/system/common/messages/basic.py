@@ -16,9 +16,9 @@ class BasicStation:
     city: str
 
     def get_routing_key(self) -> str:
-        return RecordType.STATION
+        return f"{RecordType.STATION}.{self.city}.{self.year}"
 
-    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+    def be_handled_by(self, handler: "BasicDataRecordHandler[T]") -> T:
         return handler.handle_station(self)
 
 
@@ -32,9 +32,9 @@ class BasicTrip:
     year: str
 
     def get_routing_key(self) -> str:
-        return RecordType.TRIP
+        return f"{RecordType.TRIP}.{self.city}.{self.year}"
 
-    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+    def be_handled_by(self, handler: "BasicDataRecordHandler[T]") -> T:
         return handler.handle_trip(self)
 
 
@@ -45,33 +45,39 @@ class BasicWeather:
     city: str
 
     def get_routing_key(self) -> str:
-        return RecordType.WEATHER
+        return f"{RecordType.WEATHER}.{self.city}"
 
-    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+    def be_handled_by(self, handler: "BasicDataRecordHandler[T]") -> T:
         return handler.handle_weather(self)
 
 
 @dataclass
 class TripsStart:
+    # This class is needed to differentiate between the end of weather
+    # & stations of one parser and the end of trips of another parser.
     def get_routing_key(self) -> str:
         return RecordType.TRIPS_START
 
-    def be_handled_by(self, handler: "BasicRecordHandler[T]") -> T:
+    def be_handled_by(self, handler: "TripsStartHandler[T]") -> T:
         return handler.handle_trips_start()
 
 
-class BasicRecordHandler(Protocol[T]):
-    def handle_weather(self, weather: BasicWeather) -> T:
+BasicDataRecord = BasicStation | BasicTrip | BasicWeather
+BasicControlRecord = TripsStart | End
+BasicRecord = BasicDataRecord | BasicControlRecord
+
+
+class BasicDataRecordHandler(Protocol[T]):
+    def handle_station(self, station: BasicStation) -> T:
         ...
 
-    def handle_station(self, station: BasicStation) -> T:
+    def handle_weather(self, weather: BasicWeather) -> T:
         ...
 
     def handle_trip(self, trip: BasicTrip) -> T:
         ...
 
+
+class TripsStartHandler(Protocol[T]):
     def handle_trips_start(self) -> T:
         ...
-
-
-BasicRecord = BasicStation | BasicTrip | BasicWeather | TripsStart | End

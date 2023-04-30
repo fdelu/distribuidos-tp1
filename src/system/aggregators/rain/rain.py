@@ -1,5 +1,5 @@
-from common.messages.joined import JoinedTrip
-from common.messages.rain import DateInfo, PartialRainAverages
+from common.messages.joined import JoinedRainTrip
+from common.messages.aggregated import DateInfo, PartialRainAverages
 
 
 class RainAggregator:
@@ -8,7 +8,7 @@ class RainAggregator:
     def __init__(self):
         self.averages = {}
 
-    def handle_trip(self, trip: JoinedTrip):
+    def handle_joined(self, trip: JoinedRainTrip):
         date_average = self.averages.setdefault(trip.start_date, DateInfo(0, 0))
         date_average.count += 1
         delta = (trip.duration_sec - date_average.average_duration) / date_average.count

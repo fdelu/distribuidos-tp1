@@ -3,7 +3,7 @@ from typing import Callable
 
 from common.messages.basic import BasicRecord
 from common.comms_base import SystemCommunicationBase
-from common.messages import BaseRecordType
+from common.messages import RecordType
 from common.messages.raw import RawRecord
 
 
@@ -18,7 +18,7 @@ class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
         self._start_consuming_from(self.BATCHS_QUEUE)
 
         self.channel.queue_declare(self.END_QUEUE, exclusive=True)
-        self.channel.queue_bind(self.END_QUEUE, self.EXCHANGE, BaseRecordType.END)
+        self.channel.queue_bind(self.END_QUEUE, self.EXCHANGE, RecordType.END)
         self._start_consuming_from(self.END_QUEUE)
 
     def _get_routing_details(self, record: BasicRecord):

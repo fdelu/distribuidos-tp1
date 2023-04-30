@@ -1,5 +1,5 @@
 from common.comms_base import SystemCommunicationBase
-from common.messages.rain import PartialRainRecords
+from common.messages.aggregated import PartialRainRecords
 from common.messages.stats import StatsRecord
 
 

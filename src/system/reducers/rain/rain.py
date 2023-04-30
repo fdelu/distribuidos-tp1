@@ -1,4 +1,4 @@
-from common.messages.rain import DateInfo, PartialRainAverages
+from common.messages.aggregated import DateInfo, PartialRainAverages
 from common.messages.stats import RainAverages, StatsRecord
 
 

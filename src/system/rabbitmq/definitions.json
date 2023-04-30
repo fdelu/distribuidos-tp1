@@ -32,14 +32,14 @@
             "arguments": {}
         },
         {
-            "name": "basic_trips",
+            "name": "rain_basic_trips",
             "vhost": "/",
             "durable": false,
             "auto_delete": false,
             "arguments": {}
         },
         {
-            "name": "rain_trips",
+            "name": "rain_joined_trips",
             "vhost": "/",
             "durable": false,
             "auto_delete": false,
@@ -73,16 +73,16 @@
         {
             "name": "basic_records",
             "vhost": "/",
-            "type": "direct",
+            "type": "topic",
             "durable": false,
             "auto_delete": false,
             "internal": false,
             "arguments": {}
         },
         {
-            "name": "joined_records",
+            "name": "rain_joined_records",
             "vhost": "/",
-            "type": "topic",
+            "type": "direct",
             "durable": false,
             "auto_delete": false,
             "internal": false,
@@ -101,17 +101,17 @@
         {
             "source": "basic_records",
             "vhost": "/",
-            "destination": "basic_trips",
+            "destination": "rain_basic_trips",
             "destination_type": "queue",
-            "routing_key": "trip",
+            "routing_key": "trip.#",
             "arguments": {}
         },
         {
-            "source": "joined_records",
+            "source": "rain_joined_records",
             "vhost": "/",
-            "destination": "rain_trips",
+            "destination": "rain_joined_trips",
             "destination_type": "queue",
-            "routing_key": "trip.*.*.true",
+            "routing_key": "trip",
             "arguments": {}
         }
     ]

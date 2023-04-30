@@ -40,19 +40,20 @@ services:
       mode: replicated
       replicas: ${PARSERS_SCALE}
     depends_on:
-      joiners:
+      rain-joiners:
         condition: service_healthy
 
-  joiners:
+  rain-joiners:
     extends:
       file: src/system/compose-base-service.yaml
       service: base
     build:
       args:
-        WORKDIR: joiners
+        WORKDIR: joiners/rain
+      target: joiners
     deploy:
       mode: replicated
-      replicas: ${JOINERS_SCALE}
+      replicas: ${RAIN_JOINERS_SCALE}
     depends_on:
       rain-aggregators:
         condition: service_healthy

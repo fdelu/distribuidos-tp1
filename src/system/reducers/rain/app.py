@@ -2,7 +2,7 @@ import logging
 from shared.log import setup_logs
 
 from ..common.reducer import ReductionHandler
-from common.messages.rain import PartialRainRecords
+from common.messages.aggregated import PartialRainRecords
 from .rain import RainReducer
 from ..common.config import Config
 

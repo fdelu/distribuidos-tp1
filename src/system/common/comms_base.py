@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 import os
 from functools import partial
 from typing import Any, Callable, TypeVar, Generic, get_args
@@ -9,12 +10,12 @@ from common.config_base import ConfigBase
 from common.serde import serialize, deserialize
 
 IN = TypeVar("IN")
-OUT = TypeVar("OUT")
+OUT = TypeVar("OUT", contravariant=True)
 STATUS_FILE = os.getenv("STATUS_FILE", "status.txt")
 TIMEOUT_SECONDS = 1
 
 
-class SystemCommunicationBase(Generic[IN, OUT]):
+class SystemCommunicationBase(ABC, Generic[IN, OUT]):
     connection: BlockingConnection
     channel: BlockingChannel
     callback: Callable[[IN], None] | None
@@ -76,17 +77,19 @@ class SystemCommunicationBase(Generic[IN, OUT]):
         exchange, routing_key = self._get_routing_details(record)
         self.__send_to(record, exchange, routing_key)
 
+    @abstractmethod
     def _load_definitions(self):
         """
         Declares the exchanges, queues and bindings required for the communication
         """
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def _get_routing_details(self, record: OUT) -> tuple[str, str]:
         """
         Should return a tuple of (exchange_name, routing_key) for this record
         """
-        raise NotImplementedError()
+        ...
 
     def _start_consuming_from(self, queue: str):
         """

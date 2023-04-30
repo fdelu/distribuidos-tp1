@@ -2,22 +2,23 @@ import logging
 
 from common.messages.basic import BasicRecord
 
-from .phases import Phase
+
+from .phases import Phase, Joiner
 from .phases.weather_stations import WeatherStationsPhase
-from .comms import SystemCommunication
+from .comms import JoinerComms
 from .config import Config
 
 
-class RecordJoiner:
-    comms: SystemCommunication
+class JoinHandler:
+    comms: JoinerComms
     config: Config
-
+    joiner: Joiner
     phase: Phase
 
-    def __init__(self, config: Config):
-        self.comms = SystemCommunication(config)
+    def __init__(self, config: Config, comms: JoinerComms, joiner: Joiner):
+        self.comms = comms
         self.config = config
-        self.phase = WeatherStationsPhase(self.comms, config)
+        self.phase = WeatherStationsPhase(self.comms, config, joiner)
 
     def run(self):
         logging.info("Receiving weather & stations")

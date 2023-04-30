@@ -4,14 +4,16 @@ from uuid import uuid4
 from common.config_base import ConfigBase
 from common.messages import RecordType
 from common.comms_base import SystemCommunicationBase
-from common.messages.joined import JoinedRecord
-from common.messages.rain import PartialRainRecords
+from common.messages.joined import JoinedRainRecord
+from common.messages.aggregated import PartialRainRecords
 
 
-class SystemCommunication(SystemCommunicationBase[JoinedRecord, PartialRainRecords]):
-    EXCHANGE = "joined_records"
-    TRIPS_QUEUE = "rain_trips"
-    END_QUEUE = f"rain_ends_{uuid4()}"
+class SystemCommunication(
+    SystemCommunicationBase[JoinedRainRecord, PartialRainRecords]
+):
+    EXCHANGE = "rain_joined_records"
+    TRIPS_QUEUE = "rain_joined_trips"
+    END_QUEUE = f"rain_aggregators_ends_{uuid4()}"
 
     OUT_QUEUE = "rain_aggregated"
 

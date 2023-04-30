@@ -2,7 +2,7 @@ import logging
 from typing import Any, Generic, Protocol, TypeVar
 
 from common.messages import End
-from common.messages.joined import JoinedRecord, JoinedTrip
+from common.messages.joined import GenericJoinedRecord
 from common.comms_base import SystemCommunicationBase
 
 from .config import Config
@@ -10,8 +10,8 @@ from .config import Config
 T = TypeVar("T", covariant=True, bound=End)
 
 
-class Aggregator(Protocol[T]):
-    def handle_trip(self, trip: JoinedTrip):
+class Aggregator(Protocol[GenericJoinedRecord, T]):
+    def handle_joined(self, trip: GenericJoinedRecord):
         ...
 
     def get_value(self) -> T:
@@ -21,16 +21,16 @@ class Aggregator(Protocol[T]):
         ...
 
 
-class AggregationHandler(Generic[T]):
-    comms: SystemCommunicationBase[JoinedTrip, T]
-    aggregator: Aggregator[T]
+class AggregationHandler(Generic[T, GenericJoinedRecord]):
+    comms: SystemCommunicationBase[GenericJoinedRecord | End, T]
+    aggregator: Aggregator[GenericJoinedRecord, T]
     config: Config
     timer: Any | None
     ends_received: int
 
     def __init__(
         self,
-        comms: SystemCommunicationBase[JoinedTrip, T],
+        comms: SystemCommunicationBase[GenericJoinedRecord | End, T],
         aggregator: Aggregator,
         config: Config,
     ):
@@ -45,8 +45,8 @@ class AggregationHandler(Generic[T]):
         self.comms.start_consuming()
         self.comms.close()
 
-    def handle_trip(self, trip: JoinedTrip):
-        self.aggregator.handle_trip(trip)
+    def handle_joined(self, trip: GenericJoinedRecord):
+        self.aggregator.handle_joined(trip)
 
         if self.timer is None:
             self.setup_timer()
@@ -62,7 +62,7 @@ class AggregationHandler(Generic[T]):
         logging.info("Waiting for all trips to be processed")
         self.comms.set_all_trips_done_callback(self.finished)
 
-    def handle_record(self, record: JoinedRecord):
+    def handle_record(self, record: GenericJoinedRecord):
         record.be_handled_by(self)
 
     def finished(self):

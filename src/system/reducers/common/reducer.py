@@ -1,36 +1,33 @@
-from typing import Generic, TypeVar, Protocol
+from typing import Generic, Protocol
 import logging
 
-from common.messages.rain import PartialRainRecords
+from common.messages.aggregated import GenericAggregatedRecord
 from common.messages.stats import StatsRecord
-from system.common.comms_base import SystemCommunicationBase
+from common.comms_base import SystemCommunicationBase
+from common.messages import End
 
-from ..rain.comms import SystemCommunication
 from .config import Config
 
 
-T = TypeVar("T")
-
-
-class Reducer(Protocol[T]):
-    def handle_aggregated(self, aggregated: T):
+class Reducer(Protocol[GenericAggregatedRecord]):
+    def handle_aggregated(self, aggregated: GenericAggregatedRecord):
         ...
 
     def get_value(self) -> StatsRecord:
         ...
 
 
-class ReductionHandler(Generic[T]):
-    reducer: Reducer[T]
+class ReductionHandler(Generic[GenericAggregatedRecord]):
+    reducer: Reducer[GenericAggregatedRecord]
     config: Config
-    comms: SystemCommunication
+    comms: SystemCommunicationBase[GenericAggregatedRecord | End, StatsRecord]
     ends_received: int
 
     def __init__(
         self,
         config: Config,
-        reducer: Reducer[T],
-        comms: SystemCommunicationBase[T, StatsRecord],
+        reducer: Reducer[GenericAggregatedRecord],
+        comms: SystemCommunicationBase[GenericAggregatedRecord | End, StatsRecord],
     ):
         self.comms = comms
         self.reducer = reducer
@@ -42,7 +39,7 @@ class ReductionHandler(Generic[T]):
         self.comms.start_consuming()
         self.comms.close()
 
-    def handle_aggregated(self, aggregated: T):
+    def handle_aggregated(self, aggregated: GenericAggregatedRecord):
         self.reducer.handle_aggregated(aggregated)
 
     def handle_end(self):
@@ -58,5 +55,5 @@ class ReductionHandler(Generic[T]):
         self.comms.send(self.reducer.get_value())
         self.comms.stop_consuming()
 
-    def handle_record(self, record: PartialRainRecords):
+    def handle_record(self, record: GenericAggregatedRecord | End):
         record.be_handled_by(self)
