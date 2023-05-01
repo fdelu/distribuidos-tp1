@@ -5,6 +5,8 @@ from typing import Any, Callable, TypeVar, Generic, get_args
 import os
 from functools import partial
 from signal import signal, SIGTERM
+import time
+import logging
 
 from pika import BlockingConnection, ConnectionParameters, spec
 from pika.adapters.blocking_connection import BlockingChannel
@@ -22,6 +24,7 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
     connection: BlockingConnection
     channel: BlockingChannel
     callback: Callable[[IN], None] | None
+
     # queue name -> (callback, timer)
     timeout_callbacks: dict[str, "TimeoutInfo"]
     stopped: Event
@@ -122,9 +125,15 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
         of the given queue was received. If no message is received after the call to
         this method, the callback will be called after timeout seconds.
         """
+        prev = self.timeout_callbacks.get(queue, None)
+        if prev is not None:
+            self.connection.remove_timeout(prev.timer)
+
         info = TimeoutInfo(callback, timeout, None)
         self.timeout_callbacks[queue] = info
-        self.__set_timeout_timer(info)
+        info.timer = self.connection.call_later(
+            info.time_seconds, lambda: self.__timeout_handler(info)
+        )
 
     def _set_empty_queue_callback(
         self, queue: str, callback: Callable[[], None], **queue_kwargs
@@ -193,21 +202,33 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
 
         timeout_info = self.timeout_callbacks.get(queue, None)
         if timeout_info is not None:
-            self.cancel_timer(timeout_info.timer)
+            timeout_info.last_message_on = time.time()
 
         if self.callback is not None:
             self.callback(self.__deserialize_record(body.decode()))
         if method.delivery_tag is not None:
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        if timeout_info is not None:
-            self.__set_timeout_timer(timeout_info)
+    def __timeout_handler(self, info: "TimeoutInfo"):
+        """
+        Handles a timeout for the given timeout info
+        """
+        now = time.time()
+        logging.debug(
+            f"Timeout handler | delay: {info.time_seconds}, last:"
+            f" {info.last_message_on}, now: {now}"
+        )
+        if info.last_message_on is None:
+            info.callback()
+            return
 
-    def __set_timeout_timer(self, info: "TimeoutInfo"):
-        """
-        Sets the timer for the given timeout info
-        """
-        info.timer = self.connection.call_later(info.time_seconds, info.callback)
+        seconds_remaining = info.time_seconds - (now - info.last_message_on)
+        if seconds_remaining <= 0:
+            info.callback()
+        else:
+            info.timer = self.connection.call_later(
+                seconds_remaining, lambda: self.__timeout_handler(info)
+            )
 
     def __deserialize_record(self, message: str) -> IN:
         """
@@ -232,5 +253,6 @@ class TimeoutInfo:
     """
 
     callback: Callable[[], None]
-    time_seconds: float
-    timer: Any | None
+    time_seconds: float  # timeout after this many seconds
+    last_message_on: float | None  # time.time() when the last message was received
+    timer: Any | None = None  # the timer object
