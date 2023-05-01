@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 from common.messages.basic import BasicRecord
@@ -36,4 +37,7 @@ class Phase:
         indexes = get_indexes(batch)
         rows = get_rows(batch)
         for row in rows:
+            if self.comms.is_stopped():
+                logging.debug("Parser was stopped, skipping remaining records")
+                break
             self.comms.send(parse_func(row, indexes, batch.city))

@@ -35,6 +35,7 @@ class StatsReceiver:
     def run(self):
         self.comms.set_callback(self.handle_record)
         self.comms.start_consuming()
+        self.comms.close()
 
     def handle_rain_averages(self, stat: RainAverages):
         logging.info("Received rain averages")

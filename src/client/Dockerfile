@@ -1,4 +1,5 @@
 FROM python:3.11.3-bullseye
+SHELL ["/bin/bash", "-c"]
 
 ENV PYTHONPATH=/app
 COPY src/shared /app/shared

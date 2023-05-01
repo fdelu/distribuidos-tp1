@@ -13,14 +13,14 @@ ENV PYTHONPATH=/app:/app/system
 
 # Set up healtheck
 ENV STATUS_FILE=/status.txt
-HEALTHCHECK --interval=1s --timeout=3s --retries=30 CMD cat ${STATUS_FILE} | grep -q "OK" || exit 1
+HEALTHCHECK --interval=0.5s --timeout=3s --retries=50 CMD cat ${STATUS_FILE} | grep -q "OK" || exit 1
 
 # Copy service modules and install dependencies, if any
 ARG WORKDIR
 ENV WORKDIR=${WORKDIR}
 WORKDIR /app/system/${WORKDIR}
 COPY system/${WORKDIR} .
-RUN  if test -e requirements.txt; then pip install -r requirements.txt; fi
+RUN if test -e requirements.txt; then pip install -r requirements.txt; fi
 
 WORKDIR /app
 # replace / in WORKDIR with .

@@ -1,3 +1,4 @@
+import logging
 import zmq
 
 from shared.log import setup_logs
@@ -12,6 +13,7 @@ def main():
     config = Config()
     setup_logs(config.log_level)
     context = zmq.Context()
+    context.setsockopt(zmq.LINGER, 0)  # Don't block on close
 
     stats = Stats()
     stat_receiver = StatsReceiver(config, stats)
@@ -23,6 +25,9 @@ def main():
 
     client_handler.stop()
     client_handler.join()
+    context.term()
+
+    logging.info("Exiting gracefully")
 
 
 main()

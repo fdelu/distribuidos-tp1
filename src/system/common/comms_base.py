@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from threading import Event
+from typing import Any, Callable, TypeVar, Generic, get_args
 import os
 from functools import partial
-from typing import Any, Callable, TypeVar, Generic, get_args
+from signal import signal, SIGTERM
+
 from pika import BlockingConnection, ConnectionParameters, spec
 from pika.adapters.blocking_connection import BlockingChannel
-from common.config_base import ConfigBase
 
+from common.config_base import ConfigBase
 from common.serde import serialize, deserialize
 
 IN = TypeVar("IN")
@@ -21,16 +24,20 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
     callback: Callable[[IN], None] | None
     # queue name -> (callback, timer)
     timeout_callbacks: dict[str, "TimeoutInfo"]
+    stopped: Event
 
-    def __init__(self, config: ConfigBase):
+    def __init__(self, config: ConfigBase, with_interrupt: bool = True):
         self.connection = BlockingConnection(
             ConnectionParameters(host=config.rabbit_host)
         )
         self.channel = self.connection.channel()
         self.channel.basic_qos(prefetch_count=config.prefetch_count)
 
+        self.stopped = Event()
         self.timeout_callbacks = {}
         self.callback = None
+        if with_interrupt:
+            self.__setup_interrupt()
         self.__setup()
 
     def start_consuming(self):
@@ -43,6 +50,8 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
         """
         Signal/Thread-Safe way to stop consuming
         """
+        self.stopped.set()
+        # In case there are no messages being consumed, this will unblock the loop:
         self.connection.add_callback_threadsafe(lambda: self.channel.stop_consuming())
 
     def close(self):
@@ -76,6 +85,12 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
         """
         exchange, routing_key = self._get_routing_details(record)
         self.__send_to(record, exchange, routing_key)
+
+    def is_stopped(self) -> bool:
+        """
+        Returns whether the consuming was stopped (or will be soon)
+        """
+        return self.stopped.is_set()
 
     @abstractmethod
     def _load_definitions(self):
@@ -121,6 +136,9 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
             queue,
             lambda: self.__check_messages_left(queue, callback, **queue_kwargs),
         )
+
+    def __setup_interrupt(self):
+        signal(SIGTERM, lambda *_: self.stop_consuming())
 
     def __send_to(self, record: OUT, exchange: str, routing_key: str):
         """
@@ -169,6 +187,10 @@ class SystemCommunicationBase(ABC, Generic[IN, OUT]):
         if set and acknowledging the message afterwards.
         This method returns when stop_consuming() is called.
         """
+        if self.stopped.is_set():
+            self.channel.stop_consuming()
+            return
+
         timeout_info = self.timeout_callbacks.get(queue, None)
         if timeout_info is not None:
             self.cancel_timer(timeout_info.timer)

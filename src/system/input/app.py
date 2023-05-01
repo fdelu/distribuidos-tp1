@@ -12,12 +12,12 @@ def main():
     setup_logs(config.log_level)
 
     context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.bind(config.address)
+    context.setsockopt(zmq.LINGER, 0)  # Don't block on close
 
-    handler = ClientHandler(config, socket)
+    handler = ClientHandler(config, context)
     handler.run()
-    socket.close()
+    context.term()
+
     logging.info("Exiting gracefully")
 
 

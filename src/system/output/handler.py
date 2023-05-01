@@ -74,7 +74,6 @@ class ClientHandlerInternal:
     def __init__(self, context: zmq.Context, config: Config, stats: Stats):
         self.clients_socket = context.socket(zmq.ROUTER)
         self.clients_socket.bind(config.address)
-        logging.info(f"Binded client socket to {config.address}")
         self.control_socket = context.socket(zmq.PAIR)
         self.control_socket.bind(CONTROL_ADDR)
 
@@ -89,6 +88,8 @@ class ClientHandlerInternal:
         while not stop:
             stop = self.__receive(poller)
 
+        poller.unregister(self.clients_socket)
+        poller.unregister(self.control_socket)
         self.clients_socket.close()
         self.control_socket.close()
 

@@ -1,106 +1,110 @@
 import json
 import logging
-from typing import Any
+import signal
+from threading import Event
+from typing import Any, Iterable
 import zmq
 
+from shared.socket import SocketStopWrapper
 from shared.messages import RecordType
 from shared.messages import Phase, SplitChar, StatType
 from .config import Config
+
+TIMEOUT_MILLISECONDS = 1000
 
 
 class BikeRidesAnalyzer:
     phase: Phase
     config: Config
+    interrupted: Event
 
     context: zmq.Context
-    input_socket: zmq.Socket | None = None
-    output_socket: zmq.Socket | None = None
+    input_socket: SocketStopWrapper
+    output_socket: SocketStopWrapper
 
     def __init__(self, config: Config):
         self.config = config
         self.phase = Phase.StationsWeather
         self.context = zmq.Context()
+        self.context.setsockopt(zmq.LINGER, 0)  # Don't block on close
+        self.interrupted = Event()
 
-    def send_stations(self, city: str, file_path: str):
+        input_socket = self.context.socket(zmq.PAIR)
+        input_socket.connect(config.input_address)
+        self.input_socket = SocketStopWrapper(input_socket, self.interrupted)
+        output_socket = self.context.socket(zmq.REQ)
+        output_socket.connect(config.output_address)
+        self.output_socket = SocketStopWrapper(output_socket, self.interrupted)
+
+    def interrupt_on_signal(self, signum: signal.Signals):
+        signal.signal(signum, lambda *_: self.interrupted.set())
+
+    def send_stations(self, city: str, lines: Iterable[str]):
         logging.info(f"Sending stations for {city}")
         if self.phase != Phase.StationsWeather:
             raise ValueError(f"Can't send stations in this phase: {self.phase}")
 
-        self.__send_from_file(city, file_path, RecordType.STATION)
+        self.__send_batchs(city, lines, RecordType.STATION)
 
-    def send_weather(self, city: str, file_path: str):
+    def send_weather(self, city: str, lines: Iterable[str]):
         logging.info(f"Sending weather for {city}")
         if self.phase != Phase.StationsWeather:
             raise ValueError(f"Can't send weather in this phase: {self.phase}")
 
-        self.__send_from_file(city, file_path, RecordType.WEATHER)
+        self.__send_batchs(city, lines, RecordType.WEATHER)
 
-    def send_trips(self, city: str, file_path: str):
+    def send_trips(self, city: str, lines: Iterable[str]):
         logging.info(f"Sending trips for {city}")
         if self.phase == Phase.StationsWeather:
             self.phase = Phase.Trips
-
         if self.phase != Phase.Trips:
             raise ValueError(f"Can't send trips in this phase: {self.phase}")
 
-        self.__send_from_file(city, file_path, RecordType.TRIP)
-
-    def process_results(self):
-        if self.phase != Phase.Trips:
-            raise ValueError(f"Can't process results in this phase: {self.phase}")
-        if self.input_socket is None:
-            self.input_socket = self.__connect_input_socket()
-        self.phase = Phase.End
-        self.input_socket.send_string(RecordType.END)
+        self.__send_batchs(city, lines, RecordType.TRIP)
 
     def get_rain_averages(self) -> dict[str, float]:
         return self.__get_stat(StatType.RAIN)
 
-    def __connect_input_socket(self) -> zmq.Socket:
-        input_socket = self.context.socket(zmq.PAIR)
-        logging.info(f"Connecting to input on {self.config.input_address}")
-        input_socket.connect(self.config.input_address)
-        return input_socket
-
-    def __connect_output_socket(self) -> zmq.Socket:
-        output_socket = self.context.socket(zmq.REQ)
-        logging.info(f"Connecting to output on {self.config.output_address}")
-        output_socket.connect(self.config.output_address)
-        return output_socket
+    def close(self):
+        self.input_socket.close()
+        self.output_socket.close()
+        self.context.term()
 
     def __get_stat(self, stat: StatType) -> Any:
+        if self.phase == Phase.Trips:
+            self.input_socket.send(RecordType.END)
+            self.phase = Phase.End
         if self.phase != Phase.End:
             raise ValueError(f"Can't get stat in this phase: {self.phase}")
-        if self.output_socket is None:
-            self.output_socket = self.__connect_output_socket()
 
-        self.output_socket.send_string(stat)
+        self.output_socket.send(stat)
         logging.info(f"Requesting stat {stat}")
-        response = self.output_socket.recv_string()
+        response = self.output_socket.recv()
         logging.info(f"Stat {stat} received")
         return json.loads(response)
 
-    def __send_from_file(self, city: str, path: str, type: RecordType) -> int:
+    def __send_batchs(self, city: str, lines: Iterable[str], type: RecordType) -> int:
         count = -1  # don't count the header
-        batch = []
 
-        if self.input_socket is None:
-            self.input_socket = self.__connect_input_socket()
+        self.input_socket.send(f"{type}{SplitChar.HEADER}{city}")
 
-        self.input_socket.send_string(f"{type}{SplitChar.HEADER}{city}")
+        for batch in self.__batch(lines):
+            count += len(batch)
+            self.input_socket.send(SplitChar.RECORDS.join(batch))
 
-        with open(path) as f:
-            lines = (x.strip() for x in f.readlines())
-            for line in lines:
-                batch.append(line)
-                count += 1
-                if len(batch) == self.config.batch_size:
-                    self.input_socket.send_string(SplitChar.RECORDS.join(batch))
-                    batch = []
+        self.input_socket.send(RecordType.END)
 
-        if batch:
-            self.input_socket.send_string(SplitChar.RECORDS.join(batch))
-
-        self.input_socket.send_string(RecordType.END)
+        if self.input_socket.recv() != RecordType.ACK:
+            raise RuntimeError("Did not receive ACK for this batch")
         logging.info(f"{self.phase} | {city} | Sent {count} {type} records")
         return count
+
+    def __batch(self, lines: Iterable[str]) -> list[str]:
+        batch = []
+        for line in lines:
+            batch.append(line)
+            if len(batch) == self.config.batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch

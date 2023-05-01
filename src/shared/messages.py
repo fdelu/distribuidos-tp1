@@ -22,3 +22,4 @@ class RecordType(StrEnum):
     TRIP = "trip"
     WEATHER = "weather"
     END = "end"
+    ACK = "ack"
