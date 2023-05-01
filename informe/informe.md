@@ -48,34 +48,70 @@ Los diagramas de esta sección se encuentran disponibles para visualizar en [app
 
 ### Escenarios
 
+Los casos de uso del sistema son bastante sencillos, y estan muy ligados al Scope descripto en la sección anterior. Se pueden ver en el siguiente diagrama:
+
 | ![](diagramas/Casos%20de%20uso.png) |
 | :---------------------------------: |
 |     _Diagrama de Casos de uso_      |
 
 ### Vista lógica
 
-> TODO
-
-### Vista de procesos
-
-| ![](diagramas/Actividades.png) |
-| :----------------------------: |
-|   _Diagramas de Actividades_   |
+Para obtener las 3 estadísticas, hay 3 flujos de procesamiento información. Cada uno de ellas se puede ver en el siguiente diagrama:
 
 | ![](diagramas/DAG.png) |
 | :--------------------: |
 |   _Diagrama del DAG_   |
 
+### Vista de procesos
+
+El funcionamiento del sistema, a nivel general, tiene 3 fases:
+
+1.  **Envío de estaciones y clima:** En esta etapa se envían los registros de estaciones y clima al sistema. Los **parsers** los parsean y los envían a los **joiners**, para que los almacenen.
+2.  **Envío de viajes:** En esta etapa se envían los registros de viajes al sistema. Los **parsers** los parsean y los envían a los **joiners** para que utilicen la información almacenada y los enriquezcan antes de continuar con el procesamiento.
+3.  **Finalización**: Una vez enviados todos los viajes, se obtienen las estadísticas finales.
+
+Estas fases se pueden ver en los siguientes diagramas de actividades:
+
+> Nota: Por simplicidad, se omitió al **input** y los **parsers** en el segundo y tercer diagrama, pero siguen realizando procesamiento, solo que únicamente con viajes y no con estaciones y clima.
+
+| ![](diagramas/Actividades.png) |
+| :----------------------------: |
+|   _Diagramas de Actividades_   |
+
+Para la comunicación con el cliente, se implementó un pequeño protocolo que le permite enviar registros y solicitar los resultados. Hay un módulo $BikeRidesAnalyzer$ que actúa como interfaz del sistema para el cliente. El protocolo se puede ver en el siguiente diagrama de secuencia:
+
+> Nota: en este ejemplo el cliente solo solicita un resultado, pero puede solicitar los 3 cuantas veces quiera.
+
+| ![](diagramas/Secuencia.png) |
+| :--------------------------: |
+|   _Diagramas de Secuencia_   |
+
 ### Vista de desarrollo
 
-> TODO
+El código del proyecto esta separado en 3 paquetes:
+
+- **BikeRidesAnalyzer**: La librería del cliente que se conecta al sistema y le solicita los resultados.
+- **System**: Contiene los paquetes de cada uno de los nodos del sistema. También hay un paquete `common` que contiene código compartido para la configuración, comunicaciones, definición de mensajes y serialización/deserialización.
+- **Shared**: Paquet de código compartido entre el sistema y la librearía del cliente. Contiene las definiciones de algunas constantes del protocolo, un wrapper sobre el socket de ZeroMQ y un configurador de logs.
+
+Las dependencias entre los paquetes se pueden ver en el siguiente diagrama de paquetes:
+
+| ![](diagramas/Paquetes.png) |
+| :-------------------------: |
+|   _Diagramas de Paquetes_   |
 
 ### Vista Física
+
+Cada servicio del sistema se encuentra contenerizado en un contenedor de Docker. Para la comunicación entre los contenedores se utiliza otro container con RabbitMQ como middleware. Salvo el **Input** y **Output** que también se comunican con el cliente, los servicios solo se comunican a través del middleware. El diagrama de despliegue se puede ver a continuación:
 
 | ![](diagramas/Despliegue.png) |
 | :---------------------------: |
 |   _Diagrama de Despliegue_    |
 
+En el siguiente diagrama se puede ver como es el flujo de información entre los servicios y su escalabilidad. Los **parsers**, **joiners** y **aggregators** pueden escalarse a una cantidad arbitraria de instancias, lo cual permitiría procesar tantos registros como sea necesario. Los **aggregators** envían resultados parciales a los **reducer** cada un intervalo configurable de tiempo, el cual se puede aumentar si no se procesan lo suficientemente rápido.
+
 | ![](diagramas/Robustez.png) |
 | :-------------------------: |
 |   _Diagrama de Robustez_    |
+
+Para más detalles sobre las queues utilizadas en el sistema, recomiendo ver el diagrama _Queues & Exchanges_ en [app.diagrams.net](https://app.diagrams.net/?mode=github#Hfdelu%2Fdistribuidos-tp1%2Fmain%2Finforme%2Fdiagramas%2Fdiagramas.xml). Este diagrama es similar al de robustez pero va en más detalle con los exchanges y queues de RabbitMQ utilizados, los tópicos y tipo de mensajes de cada queue. En ese diagrama, se ejemplificó escalando los nodos de procesamiento a 3 instancias.
