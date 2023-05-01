@@ -2,11 +2,11 @@ import logging
 import signal
 from threading import Event
 import zmq
+from enum import StrEnum
 
 from shared.socket import SocketStopWrapper
 from shared.messages import SplitChar, RecordType as BaseRecordType
 
-from common.phase import Phase
 from common.messages import RecordType, End
 from common.messages.raw import RawBatch
 
@@ -15,6 +15,12 @@ from .comms import SystemCommunication
 
 
 TIMEOUT_MILLISECONDS = 1000
+
+
+class Phase(StrEnum):
+    StationsWeather = "stations_weather"
+    Trips = "trips"
+    End = "end"
 
 
 class ClientHandler:
