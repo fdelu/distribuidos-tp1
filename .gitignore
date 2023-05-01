@@ -2,5 +2,6 @@
 __pycache__
 .mypy_cache
 .pytest_cache
-src/client/data
+src/client/data/*
+!src/client/data/reduced
 notebook
