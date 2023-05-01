@@ -53,12 +53,10 @@ def deserialize_union(type_info: types.UnionType, data: Any) -> Any:
 
 def deserialize_generic(type_info: types.GenericAlias, data: Any) -> Any:
     expected_type: Any = get_origin(type_info)
-    verify_type(data, list)  # We use lists to represent lists, sets and dicts
+    verify_type(data, list)  # We use lists to represent lists, sets, dicts and tuples
     if expected_type in (list, set):
         item_type = get_args(type_info)[0]
         values = expected_type(deserialize_item(item_type, i) for i in data)
-        for i in values:
-            verify_type(i, item_type)
         return values
     if expected_type == dict:
         key_type, value_type = get_args(type_info)
@@ -66,9 +64,10 @@ def deserialize_generic(type_info: types.GenericAlias, data: Any) -> Any:
             deserialize_item(key_type, k): deserialize_item(value_type, v)
             for k, v in data
         }
-        for k, v in values.items():
-            verify_type(k, key_type)
-            verify_type(v, value_type)
+        return values
+    if expected_type == tuple:
+        item_types = get_args(type_info)
+        values = tuple(deserialize_item(t, d) for t, d in zip(item_types, data))
         return values
     raise SerializationError(f"Generic type {expected_type} is not supported")
 

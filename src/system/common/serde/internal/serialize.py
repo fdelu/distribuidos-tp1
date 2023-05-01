@@ -60,6 +60,9 @@ def serialize_generic(collection: Any, type_info: types.GenericAlias) -> Transla
             [serialize_item(k, key_type), serialize_item(v, value_type)]
             for k, v in collection.items()
         ]
+    if expected_type == tuple:
+        item_types = get_args(type_info)
+        return [serialize_item(i, t) for i, t in zip(collection, item_types)]
     raise SerializationError(f"Generic type {expected_type} is not supported")
 
 
