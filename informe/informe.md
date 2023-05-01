@@ -16,19 +16,23 @@ Dicha información se debe obtener de registros de clima, estaciones de biciclet
 
 ## Arquitectura
 
-Para el sistema, se consideraron 5 unidades de desarrollo, cada una en una carpeta dentro del repositorio:
+Para el sistema, se consideraron 5 unidades de desarrollo, cada una la carpeta `src/system`. Todas ellas se connectan por un middleware (RabbitMQ). Estas son:
 
-1. **input**: se conecta a el cliente. Es el punto de entrada de los registros de clima, estaciones y viajes que el sistema debe procesar.
-2. **rain_trips**: procesa los viajes para los días que llovió (configurado a $\geq 30mm$ de lluvia). Inicialmente guarda los días que llovió y luego recibe los viajes. Solo procesa los viajes de los días que llovió, para los que va calculando la duración promedio del viaje por día.
-3. **year_trips**: procesa los viajes dentro de años especificos (configurado a 2016 y 2017). Inicialmente guarda los nombres de las estaciones de esos años y luego recibe los viajes. Solo procesa los viajes de esos años, para los que va contando la cantidad de viajes por estación.
-4. **city_trips**: procesa los viajes dentro de ciudades específicas (configurado a `montreal`). Inicialmente guarda los nombres de las estaciones de esas ciudades y luego recibe los viajes. Solo procesa los viajes de esa ciudad, para los que va calculando la distancia promedio que se recorre para llegar a cada estación.
-5. **output**: sumidero de la información producida por las tres unidades anteriores. Consiste en 3 partes:
-
-   - **Agrupador de rain_trips**: Va recibiendo la información de **rain_trips** y la va combinando.
-   - **Agrupador de year_trips**: Va recibiendo la información de **year_trips** y la va combinando. Cuando finaliza la ejecución, filtra las estaciones calculando la relación $r$ entre la cantidad de viajes de los dos años, manteniendo los que $r \geq k$ (configurado $k=2$, es decir, duplicaron los viajes de un año al otro).
-   - **Agrupador de city_trips**: Va recibiendo la información de **city_trips** y la va combinando. Cuando finaliza la ejecución, filtra las estaciones obteniendo aquellas cuyo promedio para llegar a ella es mayor a $d$ (configurado a $d=6$, manteniendo los de promedio $\geq 6km$).
-
-   Cuando finaliza de agrupar toda la información, envía las estadísticas finales al cliente.
+1. **input**: se conecta a el cliente, utilizando ZeroMQ. Es el punto de entrada de los registros de clima, estaciones y viajes que el sistema debe procesar.
+2. **parsers**: recibe mensajes del input, en batches csv como los que le envía el cliente. Parsea los registros de clima, estaciones y viajes, y los envía.
+3. **joiners**: reciben los registros parseados y agregan información del clima y estaciones a cada viaje. También quitan alguna información irrelevante para esa pipeline. Hay 3 tipos de **joiners**:
+   1. **rain_joiners**: Reciben todos los registros del clima y viajes. Agrega información de precipitaciones al viaje.
+   2. **year_joiners**: Reciben los registros de las estaciones y viajes de 2016 y 2017. Agregan a cada viaje el nombre de la estación de inicio.
+   3. **city_joiners**: Reciben los registros de las estaciones y viajes de una ciudad específica. Agregan a cada viaje el nombre de la estación de fin y las coordenadas de la estación de inicio y fin.
+4. **aggregators**: reciben los viajes con información agregada y los unifican. Hay 3 tipos de **agregators**:
+   1. **rain_aggregators**: Reciben los viajes con información de precipitaciones. Calculan la duración promedio de los viajes para cada día que llovió.
+   2. **year_aggregators**: Reciben los viajes con información de la estación de inicio. Cuentan la cantidad de viajes por estación para cada año.
+   3. **city_aggregators**: Reciben los viajes con información de la estación de fin y las coordenadas de la estación de inicio y fin. Calculan la distancia promedio que se recorre para llegar a cada estación.
+5. **reducer**: recibe los registros unificados y los agrupan para obtener la estadística final. Hay 3 tipos de **reducer**:
+   1. **rain_reducer**: Recibe los promedios de duración de viajes por día que llovió y los unifica.
+   2. **year_reducer**: Recibe la cantidad de viajes por estación para cada año y los unifica. Una vez unificadas todas las cantidades, encuentra las estaciones que duplicaron la cantidad de viajes de un año al otro.
+   3. **city_reducer**: Recibe la distancia promedio que se recorre para llegar a cada estación y los unifica. Una vez unificadas todas las distancias promedio, encuentra las estaciones que tienen un promedio mayor a 6km.
+6. **output**: sumidero de la información producida los **reducer**. Se conecta al cliente utilizando ZeroMQ y le envía las estadísticas finales cuando llegan y el cliente se lo solicita.
 
 ## Objetivos y restricciones de la arquitectura
 
