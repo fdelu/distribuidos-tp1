@@ -16,7 +16,6 @@ class StationInfo:
 
 @dataclass()
 class JoinedRainTrip:
-    city: str
     start_date: str
     duration_sec: float
 
@@ -31,7 +30,26 @@ JoinedRainRecord = JoinedRainTrip | End
 
 
 @dataclass
+class JoinedYearTrip:
+    start_station_name: str
+    year: str
+
+    def be_handled_by(self, handler: "JoinedRecordHandler[T, JoinedYearTrip]") -> T:
+        return handler.handle_joined(self)
+
+    def get_routing_key(self):
+        return RecordType.TRIP
+
+
+JoinedYearRecord = JoinedYearTrip | End
+
+
+@dataclass
 class JoinedCityTrip:
+    end_station_name: str
+    start_station_coordinates: tuple[float, float]
+    end_station_coordinates: tuple[float, float]
+
     def be_handled_by(self, handler: "JoinedRecordHandler[T, JoinedCityTrip]") -> T:
         return handler.handle_joined(self)
 
@@ -47,7 +65,11 @@ class JoinedRecordHandler(Protocol[T, U]):
         ...
 
 
-JoinedRecord = JoinedRainRecord | JoinedCityRecord
+JoinedRecord = JoinedRainTrip | JoinedYearTrip | JoinedCityTrip | End
 GenericJoinedRecord = TypeVar(
-    "GenericJoinedRecord", JoinedRainTrip, JoinedCityTrip, contravariant=True
+    "GenericJoinedRecord",
+    JoinedRainTrip,
+    JoinedYearTrip,
+    JoinedCityTrip,
+    contravariant=True,
 )

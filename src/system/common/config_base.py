@@ -1,5 +1,5 @@
 import os
-from configparser import ConfigParser, DEFAULTSECT
+from configparser import ConfigParser, ExtendedInterpolation, DEFAULTSECT
 
 CONFIG_PATH = "/config.ini"
 
@@ -16,14 +16,14 @@ class ConfigBase:
         if section is not None:
             self.section = section
 
-        self.parser = ConfigParser()
+        self.parser = ConfigParser(interpolation=ExtendedInterpolation())
         self.parser.read(CONFIG_PATH)
         self.log_level = self.get("LogLevel", fallback=None)
         self.rabbit_host = self.get("RabbitHost")
         self.prefetch_count = self.get_int("PrefetchCount")
 
     def get(self, key: str, **kwargs) -> str:
-        return self.parser.get(self.section, key, vars=os.environ, **kwargs)
+        return self.parser.get(self.section, key, vars=os.environ, **kwargs).strip()
 
     def get_int(self, key: str, **kwargs) -> int:
         return self.parser.getint(self.section, key, vars=os.environ, **kwargs)

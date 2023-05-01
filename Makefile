@@ -34,7 +34,7 @@ docker-compose-up: build
 	docker compose up -d	
 
 docker-compose-stop:
-	docker compose stop -t 1
+	docker compose stop -t 3
 
 docker-compose-down: docker-compose-stop
 	docker compose down

@@ -5,6 +5,7 @@ from threading import Event
 from typing import Any, Iterable
 import zmq
 
+
 from shared.socket import SocketStopWrapper
 from shared.messages import RecordType
 from shared.messages import Phase, SplitChar, StatType
@@ -65,6 +66,12 @@ class BikeRidesAnalyzer:
     def get_rain_averages(self) -> dict[str, float]:
         return self.__get_stat(StatType.RAIN)
 
+    def get_year_counts(self) -> dict[str, list[int]]:
+        return self.__get_stat(StatType.YEAR)
+
+    def get_city_averages(self) -> dict[str, float]:
+        return self.__get_stat(StatType.CITY)
+
     def close(self):
         self.input_socket.close()
         self.output_socket.close()
@@ -78,9 +85,9 @@ class BikeRidesAnalyzer:
             raise ValueError(f"Can't get stat in this phase: {self.phase}")
 
         self.output_socket.send(stat)
-        logging.info(f"Requesting stat {stat}")
+        logging.debug(f"Requesting stat {stat}")
         response = self.output_socket.recv()
-        logging.info(f"Stat {stat} received")
+        logging.debug(f"Stat {stat} received")
         return json.loads(response)
 
     def __send_batchs(self, city: str, lines: Iterable[str], type: RecordType) -> int:
@@ -99,7 +106,7 @@ class BikeRidesAnalyzer:
         logging.info(f"{self.phase} | {city} | Sent {count} {type} records")
         return count
 
-    def __batch(self, lines: Iterable[str]) -> list[str]:
+    def __batch(self, lines: Iterable[str]) -> Iterable[list[str]]:
         batch = []
         for line in lines:
             batch.append(line)

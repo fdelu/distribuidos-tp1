@@ -15,6 +15,8 @@ class SplitChar(StrEnum):
 
 class StatType(StrEnum):
     RAIN = "rain"
+    YEAR = "year"
+    CITY = "city"
 
 
 class RecordType(StrEnum):

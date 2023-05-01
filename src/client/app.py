@@ -39,6 +39,10 @@ def get_stats(bike_rides_analyzer: BikeRidesAnalyzer, config: Config):
 
     rain_stats = bike_rides_analyzer.get_rain_averages()
     logging.info(f"Rain stats:\n{rain_stats}")
+    city_stats = bike_rides_analyzer.get_city_averages()
+    logging.info(f"City stats:\n{city_stats}")
+    year_stats = bike_rides_analyzer.get_year_counts()
+    logging.info(f"Year stats:\n{year_stats}")
 
 
 def line_reader(file_path: str) -> Iterable[str]:

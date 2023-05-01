@@ -7,9 +7,6 @@ from shared.messages import StatType  # noqa
 T = TypeVar("T", covariant=True)
 
 
-# For 4_1_rained and 4_1_rained_reducer
-
-
 @dataclass
 class RainAverages:
     data: dict[str, float]  # date -> average duration
@@ -18,15 +15,32 @@ class RainAverages:
         return handler.handle_rain_averages(self)
 
 
-# For 4_2_
+@dataclass
+class YearCounts:
+    # station -> (count year base, count year duplicated)
+    data: dict[str, tuple[int, int]]
+
+    def be_handled_by(self, handler: "StatHandler[T]") -> T:
+        return handler.handle_year_counts(self)
 
 
-# ...
+@dataclass
+class CityAverages:
+    data: dict[str, float]  # station -> average distance
+
+    def be_handled_by(self, handler: "StatHandler[T]") -> T:
+        return handler.handle_city_averages(self)
 
 
 class StatHandler(Protocol[T]):
     def handle_rain_averages(self, averages: RainAverages) -> T:
         ...
 
+    def handle_year_counts(self, counts: YearCounts) -> T:
+        ...
 
-StatsRecord = RainAverages
+    def handle_city_averages(self, averages: CityAverages) -> T:
+        ...
+
+
+StatsRecord = RainAverages | YearCounts | CityAverages

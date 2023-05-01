@@ -1,7 +1,13 @@
 import logging
 from typing import Protocol
 
-from common.messages.stats import RainAverages, StatsRecord, StatType
+from common.messages.stats import (
+    RainAverages,
+    StatsRecord,
+    StatType,
+    YearCounts,
+    CityAverages,
+)
 
 from . import Stats
 from ..config import Config
@@ -42,6 +48,18 @@ class StatsReceiver:
         with self.stats.lock:
             self.stats.rain_averages = stat
         self.__notify_listeners(StatType.RAIN)
+
+    def handle_year_counts(self, stat: YearCounts):
+        logging.info("Received year counts")
+        with self.stats.lock:
+            self.stats.year_counts = stat
+        self.__notify_listeners(StatType.YEAR)
+
+    def handle_city_averages(self, stat: CityAverages):
+        logging.info("Received city averages")
+        with self.stats.lock:
+            self.stats.city_averages = stat
+        self.__notify_listeners(StatType.CITY)
 
     def handle_record(self, record: StatsRecord):
         record.be_handled_by(self)

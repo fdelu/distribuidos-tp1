@@ -21,12 +21,13 @@ class Aggregator(Protocol[GenericJoinedRecord, T]):
         ...
 
 
-class AggregationHandler(Generic[T, GenericJoinedRecord]):
+class AggregationHandler(Generic[GenericJoinedRecord, T]):
     comms: SystemCommunicationBase[GenericJoinedRecord | End, T]
     aggregator: Aggregator[GenericJoinedRecord, T]
     config: Config
     timer: Any | None
     ends_received: int
+    count: int = 0
 
     def __init__(
         self,
@@ -47,7 +48,7 @@ class AggregationHandler(Generic[T, GenericJoinedRecord]):
 
     def handle_joined(self, trip: GenericJoinedRecord):
         self.aggregator.handle_joined(trip)
-
+        self.count += 1
         if self.timer is None:
             self.setup_timer()
 
@@ -66,7 +67,9 @@ class AggregationHandler(Generic[T, GenericJoinedRecord]):
         record.be_handled_by(self)
 
     def finished(self):
-        logging.info("All trips processed, sending final partial averages")
+        logging.info(
+            f"Finished processing all trips. Total processed in this node: {self.count}"
+        )
         if self.timer is not None:
             self.comms.cancel_timer(self.timer)
             self.timer = None
@@ -87,4 +90,4 @@ class AggregationHandler(Generic[T, GenericJoinedRecord]):
     def send_averages(self):
         logging.debug("Sending partial results")
         self.comms.send(self.aggregator.get_value())
-        self.averages = {}
+        self.aggregator.reset()

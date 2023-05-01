@@ -33,7 +33,7 @@ class RainJoiner:
         ):
             return
 
-        joined_trip = JoinedRainTrip(trip.city, trip.start_date, trip.duration_sec)
+        joined_trip = JoinedRainTrip(trip.start_date, trip.duration_sec)
         self.comms.send(joined_trip)
 
     def _get_join_data(self, trip: BasicTrip) -> float | None:

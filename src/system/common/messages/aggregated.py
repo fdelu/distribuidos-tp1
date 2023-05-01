@@ -15,7 +15,7 @@ class DateInfo:
 
 @dataclass
 class PartialRainAverages:
-    averages: dict[str, DateInfo]  # start_date -> DateInfo
+    duration_averages: dict[str, DateInfo]  # start_date -> DateInfo
 
     def be_handled_by(self, handler: "AggregatedHandler[T, PartialRainAverages]") -> T:
         return handler.handle_aggregated(self)
@@ -25,12 +25,32 @@ PartialRainRecords = PartialRainAverages | End
 
 
 @dataclass
-class PartialCityCounts:
-    def be_handled_by(self, handler: "AggregatedHandler[T, PartialCityCounts]") -> T:
+class PartialYearCounts:
+    counts_year_base: dict[str, int]  # station name -> trip count
+    counts_year_compared: dict[str, int]  # station name -> trip count
+
+    def be_handled_by(self, handler: "AggregatedHandler[T, PartialYearCounts]") -> T:
         return handler.handle_aggregated(self)
 
 
-PartialCityRecords = PartialCityCounts | End
+PartialYearRecords = PartialYearCounts | End
+
+
+@dataclass
+class StationInfo:
+    count: int
+    average_distance: float
+
+
+@dataclass
+class PartialCityAverages:
+    distance_averages: dict[str, StationInfo]  # station name -> StationInfo
+
+    def be_handled_by(self, handler: "AggregatedHandler[T, PartialCityAverages]") -> T:
+        return handler.handle_aggregated(self)
+
+
+PartialCityRecords = PartialCityAverages | End
 
 
 class AggregatedHandler(Protocol[T, U]):
@@ -41,6 +61,7 @@ class AggregatedHandler(Protocol[T, U]):
 GenericAggregatedRecord = TypeVar(
     "GenericAggregatedRecord",
     PartialRainAverages,
-    PartialCityCounts,
+    PartialCityAverages,
+    PartialYearCounts,
     contravariant=True,
 )

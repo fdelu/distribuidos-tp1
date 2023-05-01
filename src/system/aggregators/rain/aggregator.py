@@ -3,7 +3,7 @@ from common.messages.aggregated import DateInfo, PartialRainAverages
 
 
 class RainAggregator:
-    averages: dict[str, DateInfo]
+    averages: dict[str, DateInfo]  # date -> DateInfo
 
     def __init__(self):
         self.averages = {}

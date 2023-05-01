@@ -11,6 +11,7 @@ from ..phases import Phase
 
 class TripsPhase(Phase):
     ends_received: int = 0
+    count: int = 0
 
     def handle_station(self, station: BasicStation) -> Phase:
         logging.warn("Unexpected Station received while receiving trips")
@@ -26,6 +27,7 @@ class TripsPhase(Phase):
 
     def handle_trip(self, trip: BasicTrip) -> Phase:
         self.joiner.handle_trip(trip)
+        self.count += 1
         return self
 
     def handle_end(self) -> Phase:
@@ -41,6 +43,8 @@ class TripsPhase(Phase):
         return self
 
     def _all_trips_done(self):
-        logging.info("Finished joining all trips. Stopping...")
+        logging.info(
+            f"Finished joining all trips. Total processed in this node: {self.count}"
+        )
         self.comms.send(End())
         self.comms.stop_consuming()

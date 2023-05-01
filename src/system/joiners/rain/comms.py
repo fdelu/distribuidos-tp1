@@ -16,11 +16,10 @@ class SystemCommunication(JoinerComms):
 
         self.channel.queue_declare(
             self.OTHER_QUEUE, exclusive=True
-        )  # for weather & end
+        )  # for weather, tripstart & end
         self.channel.queue_bind(
             self.OTHER_QUEUE, self.EXCHANGE, f"{RecordType.WEATHER}.#"
         )
-        # self.channel.queue_bind(self.OTHER_QUEUE, self.EXCHANGE, RecordType.STATION)
         self.channel.queue_bind(self.OTHER_QUEUE, self.EXCHANGE, RecordType.TRIPS_START)
         self.channel.queue_bind(self.OTHER_QUEUE, self.EXCHANGE, RecordType.END)
         self._start_consuming_from(self.OTHER_QUEUE)

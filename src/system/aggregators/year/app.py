@@ -1,24 +1,22 @@
 import logging
 from shared.log import setup_logs
 
-from common.messages.joined import JoinedRainTrip
-from common.messages.aggregated import PartialRainRecords
+from common.messages.joined import JoinedYearTrip
+from common.messages.aggregated import PartialYearRecords
 
 from ..common.aggregator import AggregationHandler
-from ..common.config import Config
-from .aggregator import RainAggregator
+from .aggregator import YearAggregator
 from .comms import SystemCommunication
-
-NAME = "rain"
+from .config import Config
 
 
 def main():
-    config = Config(NAME)
+    config = Config()
     setup_logs(config.log_level)
 
     comms = SystemCommunication(config)
-    aggregator = RainAggregator()
-    handler = AggregationHandler[JoinedRainTrip, PartialRainRecords](
+    aggregator = YearAggregator(config)
+    handler = AggregationHandler[JoinedYearTrip, PartialYearRecords](
         comms, aggregator, config
     )
     handler.run()

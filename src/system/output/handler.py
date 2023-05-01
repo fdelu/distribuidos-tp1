@@ -147,11 +147,15 @@ class ClientHandlerInternal:
         with self.stats.lock:
             if type == StatType.RAIN:
                 return self.stats.rain_averages
+            if type == StatType.YEAR:
+                return self.stats.year_counts
+            if type == StatType.CITY:
+                return self.stats.city_averages
             return None
 
     def __send_stat(self, id: bytes, stat: StatsRecord):
         """
         Sends a stat to a client
         """
-        logging.info("Sending response to client")
+        logging.debug("Sending response to client")
         self.clients_socket.send_multipart([id, b"", json.dumps(stat.data).encode()])

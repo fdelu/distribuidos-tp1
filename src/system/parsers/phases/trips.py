@@ -8,6 +8,8 @@ from .parse import parse_trip
 
 
 class TripsPhase(Phase):
+    count: int = 0
+
     def handle_station_batch(self, batch: RawBatch) -> Phase:
         logging.warn("Unexpected Station received while receiving trips")
         return self
@@ -18,6 +20,7 @@ class TripsPhase(Phase):
 
     def handle_trip_batch(self, batch: RawBatch) -> Phase:
         self._send_parsed(batch, parse_trip)
+        self.count += len(batch.lines)
         return self
 
     def handle_end(self) -> Phase:
@@ -26,6 +29,8 @@ class TripsPhase(Phase):
         return self
 
     def _all_batchs_done(self):
-        logging.info("Finished parsing all trips. Stopping...")
+        logging.info(
+            f"Finished parsing all trips. Total processed in this node: {self.count}"
+        )
         self.comms.send(End())
         self.comms.stop_consuming()

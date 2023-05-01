@@ -9,7 +9,7 @@ class RainReducer:
         self.averages = {}
 
     def handle_aggregated(self, avg: PartialRainAverages):
-        for date, date_average in avg.averages.items():
+        for date, date_average in avg.duration_averages.items():
             current = self.averages.setdefault(date, DateInfo(0, 0))
 
             total_count = current.count + date_average.count
@@ -24,6 +24,3 @@ class RainReducer:
 
     def get_value(self) -> StatsRecord:
         return RainAverages({x: y.average_duration for x, y in self.averages.items()})
-
-    def reset(self):
-        self.averages = {}
