@@ -1,7 +1,9 @@
+import json
 import logging
 import os
 import signal
-from typing import Iterable
+from typing import Any, Iterable
+from datetime import datetime
 
 from shared.log import setup_logs
 
@@ -38,17 +40,28 @@ def get_stats(bike_rides_analyzer: BikeRidesAnalyzer, config: Config):
         bike_rides_analyzer.send_trips(city, line_reader(f"{path}/trips.csv"))
 
     rain_stats = bike_rides_analyzer.get_rain_averages()
-    logging.info(f"Rain stats:\n{rain_stats}")
+    save_results(config, "rain_stats", rain_stats)
     city_stats = bike_rides_analyzer.get_city_averages()
-    logging.info(f"City stats:\n{city_stats}")
+    save_results(config, "city_stats", city_stats)
     year_stats = bike_rides_analyzer.get_year_counts()
-    logging.info(f"Year stats:\n{year_stats}")
+    save_results(config, "year_stats", year_stats)
 
 
 def line_reader(file_path: str) -> Iterable[str]:
     with open(file_path) as file:
         for line in file:
             yield line.strip()
+
+
+def save_results(config: Config, name: str, data: Any):
+    with open(f"{config.result_path}/{name}.json", "w") as file:
+        file.write(
+            json.dumps(
+                {"timestamp": f"{datetime.now()}", "data": data},
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
 
 
 main()

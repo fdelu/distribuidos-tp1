@@ -197,6 +197,9 @@ services:
       - type: bind
         source: config.ini
         target: /config.ini
+      - type: bind
+        source: ./src/client/results
+        target: /tmp/results
     networks:
       - outside_net
 

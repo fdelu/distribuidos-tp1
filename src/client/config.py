@@ -6,6 +6,7 @@ class Config:
     input_address: str
     output_address: str
     data_path: str
+    result_path: str
     log_level: str | None
 
     SECTION = "client"
@@ -18,3 +19,4 @@ class Config:
         self.log_level = parser.get(self.SECTION, "LogLevel", fallback=None)
         self.output_address = parser.get(self.SECTION, "OutputAddress")
         self.data_path = parser.get(self.SECTION, "DataPath")
+        self.result_path = parser.get(self.SECTION, "ResultsPath")

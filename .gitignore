@@ -5,3 +5,4 @@ __pycache__
 src/client/data/*
 !src/client/data/reduced
 notebook
+src/client/results
