@@ -6,10 +6,10 @@ from common.messages.basic import (
     BasicTrip,
     BasicWeather,
 )
-from ..phases import Phase
+from ..phases import Phase, OUT
 
 
-class TripsPhase(Phase):
+class TripsPhase(Phase[OUT]):
     ends_received: int = 0
     count: int = 0
 

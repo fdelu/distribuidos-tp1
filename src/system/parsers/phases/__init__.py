@@ -40,4 +40,6 @@ class Phase:
             if self.comms.is_stopped():
                 logging.debug("Parser was stopped, skipping remaining records")
                 break
+            logging.debug("Parsing row")
             self.comms.send(parse_func(row, indexes, batch.city))
+            logging.debug("Finished parsing row")

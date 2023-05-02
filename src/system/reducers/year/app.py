@@ -2,7 +2,8 @@ import logging
 from shared.log import setup_logs
 
 from ..common.reducer import ReductionHandler
-from common.messages.aggregated import PartialRainRecords
+from common.messages.aggregated import PartialYearCounts
+from common.messages.stats import YearCounts
 from .year import YearReducer
 
 from .config import Config
@@ -15,7 +16,7 @@ def main():
 
     comms = SystemCommunication(config)
     reducer = YearReducer(config)
-    handler = ReductionHandler[PartialRainRecords](config, reducer, comms)
+    handler = ReductionHandler[PartialYearCounts, YearCounts](config, reducer, comms)
     handler.run()
     logging.info("Exiting gracefully")
 

@@ -2,28 +2,28 @@ import logging
 from typing import Any, Generic, Protocol, TypeVar
 
 from common.messages import End
-from common.messages.joined import GenericJoinedRecord
-from common.comms_base import SystemCommunicationBase
+from common.messages.joined import GenericJoinedTrip
 
 from .config import Config
+from .comms import AggregatorComms
 
-T = TypeVar("T", covariant=True, bound=End)
+OUT = TypeVar("OUT", covariant=True)
 
 
-class Aggregator(Protocol[GenericJoinedRecord, T]):
-    def handle_joined(self, trip: GenericJoinedRecord):
+class Aggregator(Protocol[GenericJoinedTrip, OUT]):
+    def handle_joined(self, trip: GenericJoinedTrip):
         ...
 
-    def get_value(self) -> T:
+    def get_value(self) -> OUT:
         ...
 
     def reset(self):
         ...
 
 
-class AggregationHandler(Generic[GenericJoinedRecord, T]):
-    comms: SystemCommunicationBase[GenericJoinedRecord | End, T]
-    aggregator: Aggregator[GenericJoinedRecord, T]
+class AggregationHandler(Generic[GenericJoinedTrip, OUT]):
+    comms: AggregatorComms[GenericJoinedTrip | End, OUT]
+    aggregator: Aggregator[GenericJoinedTrip, OUT]
     config: Config
     timer: Any | None
     ends_received: int
@@ -31,8 +31,8 @@ class AggregationHandler(Generic[GenericJoinedRecord, T]):
 
     def __init__(
         self,
-        comms: SystemCommunicationBase[GenericJoinedRecord | End, T],
-        aggregator: Aggregator,
+        comms: AggregatorComms[GenericJoinedTrip | End, OUT],
+        aggregator: Aggregator[GenericJoinedTrip, OUT],
         config: Config,
     ):
         self.config = config
@@ -46,7 +46,7 @@ class AggregationHandler(Generic[GenericJoinedRecord, T]):
         self.comms.start_consuming()
         self.comms.close()
 
-    def handle_joined(self, trip: GenericJoinedRecord):
+    def handle_joined(self, trip: GenericJoinedTrip):
         self.aggregator.handle_joined(trip)
         self.count += 1
         if self.timer is None:
@@ -63,7 +63,7 @@ class AggregationHandler(Generic[GenericJoinedRecord, T]):
         logging.info("Waiting for all trips to be processed")
         self.comms.set_all_trips_done_callback(self.finished)
 
-    def handle_record(self, record: GenericJoinedRecord):
+    def handle_record(self, record: GenericJoinedTrip):
         record.be_handled_by(self)
 
     def finished(self):

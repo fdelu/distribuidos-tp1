@@ -34,7 +34,7 @@ class ClientHandler:
     def __init__(self, config: Config, context: zmq.Context):
         self.config = config
         self.phase = Phase.StationsWeather
-        self.comms = SystemCommunication(config, with_interrupt=False)
+        self.comms = SystemCommunication(config)
         self.stop_event = Event()
 
         socket = context.socket(zmq.PAIR)

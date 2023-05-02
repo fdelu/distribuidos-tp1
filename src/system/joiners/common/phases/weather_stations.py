@@ -6,11 +6,11 @@ from common.messages.basic import (
     BasicWeather,
 )
 
-from . import Phase
+from . import Phase, OUT
 from .trips import TripsPhase
 
 
-class WeatherStationsPhase(Phase):
+class WeatherStationsPhase(Phase[OUT]):
     parsers_sending_trips: int = 0
     ends_received: int = 0
 

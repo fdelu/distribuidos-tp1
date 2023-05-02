@@ -1,16 +1,13 @@
-from common.comms_base import SystemCommunicationBase
+from common.comms_base import CommsSend, CommsReceive
 from common.messages.aggregated import PartialCityRecords
-from common.messages.stats import StatsRecord
+from common.messages.stats import CityAverages
+
+from ..common.comms import ReducerComms
 
 
-class SystemCommunication(SystemCommunicationBase[PartialCityRecords, StatsRecord]):
-    COUNTS_QUEUE = "city_aggregated"
-
-    OUT_QUEUE = "stats"
-
-    def _load_definitions(self):
-        # in
-        self._start_consuming_from(self.COUNTS_QUEUE)
-
-    def _get_routing_details(self, record: StatsRecord):
-        return "", self.OUT_QUEUE
+class SystemCommunication(
+    ReducerComms[PartialCityRecords, CityAverages],
+    CommsSend[CityAverages],
+    CommsReceive[PartialCityRecords],
+):
+    INPUT_QUEUE: str = "city_aggregated"

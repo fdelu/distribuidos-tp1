@@ -3,10 +3,10 @@ import logging
 
 from common.messages.aggregated import GenericAggregatedRecord
 from common.messages.stats import StatsRecord
-from common.comms_base import SystemCommunicationBase
 from common.messages import End
 
 from .config import Config
+from .comms import ReducerComms, OUT
 
 
 class Reducer(Protocol[GenericAggregatedRecord]):
@@ -17,17 +17,17 @@ class Reducer(Protocol[GenericAggregatedRecord]):
         ...
 
 
-class ReductionHandler(Generic[GenericAggregatedRecord]):
+class ReductionHandler(Generic[GenericAggregatedRecord, OUT]):
     reducer: Reducer[GenericAggregatedRecord]
     config: Config
-    comms: SystemCommunicationBase[GenericAggregatedRecord | End, StatsRecord]
+    comms: ReducerComms[GenericAggregatedRecord | End, OUT]
     ends_received: int
 
     def __init__(
         self,
         config: Config,
         reducer: Reducer[GenericAggregatedRecord],
-        comms: SystemCommunicationBase[GenericAggregatedRecord | End, StatsRecord],
+        comms: ReducerComms[GenericAggregatedRecord | End, OUT],
     ):
         self.comms = comms
         self.reducer = reducer
@@ -55,5 +55,5 @@ class ReductionHandler(Generic[GenericAggregatedRecord]):
         self.comms.send(self.reducer.get_value())
         self.comms.stop_consuming()
 
-    def handle_record(self, record: GenericAggregatedRecord | End):
+    def handle_record(self, record: GenericAggregatedRecord):
         record.be_handled_by(self)

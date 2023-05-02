@@ -2,12 +2,20 @@ from uuid import uuid4
 from typing import Callable
 
 from common.messages.basic import BasicRecord
-from common.comms_base import SystemCommunicationBase
+from common.comms_base import (
+    SystemCommunicationBase,
+    CommsSend,
+    CommsReceive,
+)
 from common.messages import RecordType
 from common.messages.raw import RawRecord
 
 
-class SystemCommunication(SystemCommunicationBase[RawRecord, BasicRecord]):
+class SystemCommunication(
+    CommsSend[BasicRecord],
+    CommsReceive[RawRecord],
+    SystemCommunicationBase,
+):
     EXCHANGE = "raw_records"
     BATCHS_QUEUE = "raw_batchs"
     END_QUEUE = f"parser_ends_{uuid4()}"

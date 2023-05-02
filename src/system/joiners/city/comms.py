@@ -1,12 +1,14 @@
 from uuid import uuid4
 
+from common.comms_base import CommsSend
 from common.messages import RecordType
+from common.messages.joined import JoinedCityRecords
 
 from .config import Config
 from ..common.comms import JoinerComms
 
 
-class SystemCommunication(JoinerComms):
+class SystemCommunication(CommsSend[JoinedCityRecords], JoinerComms[JoinedCityRecords]):
     EXCHANGE = "basic_records"
     TRIPS_QUEUE = "city_basic_trips"
     OTHER_QUEUE = f"city_joiner_other_{uuid4()}"

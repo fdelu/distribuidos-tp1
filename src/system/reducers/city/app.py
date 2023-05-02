@@ -2,7 +2,8 @@ import logging
 from shared.log import setup_logs
 
 from ..common.reducer import ReductionHandler
-from common.messages.aggregated import PartialRainRecords
+from common.messages.aggregated import PartialCityAverages
+from common.messages.stats import CityAverages
 from .city import CityReducer
 
 from .config import Config
@@ -15,7 +16,9 @@ def main():
 
     comms = SystemCommunication(config)
     reducer = CityReducer(config)
-    handler = ReductionHandler[PartialRainRecords](config, reducer, comms)
+    handler = ReductionHandler[PartialCityAverages, CityAverages](
+        config, reducer, comms
+    )
     handler.run()
     logging.info("Exiting gracefully")
 

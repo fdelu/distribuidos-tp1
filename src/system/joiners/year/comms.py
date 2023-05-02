@@ -1,12 +1,14 @@
 from uuid import uuid4
 
+from common.comms_base import CommsSend
 from common.messages import RecordType
+from common.messages.joined import JoinedYearRecords
 
 from .config import Config
 from ..common.comms import JoinerComms
 
 
-class SystemCommunication(JoinerComms):
+class SystemCommunication(CommsSend[JoinedYearRecords], JoinerComms[JoinedYearRecords]):
     EXCHANGE = "basic_records"
     TRIPS_QUEUE = "year_basic_trips"
     OTHER_QUEUE = f"year_joiner_other_{uuid4()}"
