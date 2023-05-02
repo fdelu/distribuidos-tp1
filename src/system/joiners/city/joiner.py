@@ -27,7 +27,7 @@ class CityJoiner:
 
     def handle_station(self, station: BasicStation):
         if station.latitude is None or station.longitude is None:
-            logging.warn(
+            logging.debug(
                 f"Missing coordinates for station code {station.code}, year"
                 f" {station.year}"
             )
@@ -60,5 +60,5 @@ class CityJoiner:
     def __get_station_data(self, code: str, year: str, city: str) -> StationData | None:
         station = self.station_names[city].get((code, year), None)
         if station is None:
-            logging.warn(f"Missing station data for code {code}, year {year} ({city})")
+            logging.debug(f"Missing station data for code {code}, year {year} ({city})")
         return station

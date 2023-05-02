@@ -38,7 +38,7 @@ class YearJoiner:
             (trip.start_station_code, trip.year), None
         )
         if name is None:
-            logging.warn(
+            logging.debug(
                 f"Missing station name for code {trip.start_station_code}, year"
                 f" {trip.year} ({trip.city})"
             )

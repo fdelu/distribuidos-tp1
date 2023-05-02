@@ -6,3 +6,4 @@ src/client/data/*
 !src/client/data/reduced
 notebook
 src/client/results
+example_logs*.txt

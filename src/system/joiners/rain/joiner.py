@@ -39,6 +39,6 @@ class RainJoiner:
     def _get_join_data(self, trip: BasicTrip) -> float | None:
         weather = self.weather[trip.city].get(trip.start_date, None)
         if weather is None:
-            logging.warn(f"Missing weather for date {trip.start_date} ({trip.city})")
+            logging.debug(f"Missing weather for date {trip.start_date} ({trip.city})")
             return None
         return weather
