@@ -11,7 +11,7 @@ class RainJoiner:
     # city -> day -> precipitation
     weather: dict[str, dict[str, float]]
     config: Config
-    comms: JoinerComms
+    comms: JoinerComms[JoinedRainTrip]
 
     def __init__(self, config: Config, comms: JoinerComms):
         self.weather = {}

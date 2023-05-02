@@ -1,16 +1,17 @@
 import logging
+from typing import Generic
 
 from common.messages.basic import BasicRecord
 
 
 from .phases import Phase, Joiner
 from .phases.weather_stations import WeatherStationsPhase
-from .comms import JoinerComms
+from .comms import JoinerComms, GenericJoinedTrip
 from .config import Config
 
 
-class JoinHandler:
-    comms: JoinerComms
+class JoinHandler(Generic[GenericJoinedTrip]):
+    comms: JoinerComms[GenericJoinedTrip]
     config: Config
     joiner: Joiner
     phase: Phase

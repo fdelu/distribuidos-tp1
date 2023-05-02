@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Generic
 
 from common.messages.basic import (
     BasicRecord,
@@ -7,6 +8,7 @@ from common.messages.basic import (
     BasicWeather,
     BasicDataRecordHandler,
 )
+from common.messages.joined import GenericJoinedTrip
 
 from ..config import Config
 from ..comms import JoinerComms
@@ -14,8 +16,8 @@ from ..comms import JoinerComms
 Joiner = BasicDataRecordHandler
 
 
-class Phase(ABC):
-    comms: JoinerComms
+class Phase(ABC, Generic[GenericJoinedTrip]):
+    comms: JoinerComms[GenericJoinedTrip]
     config: Config
     joiner: BasicDataRecordHandler
 

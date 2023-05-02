@@ -18,7 +18,7 @@ class CityJoiner:
     # city -> (code, year) -> data
     station_names: dict[str, dict[tuple[str, str], StationData]]
     config: Config
-    comms: JoinerComms
+    comms: JoinerComms[JoinedCityTrip]
 
     def __init__(self, config: Config, comms: JoinerComms):
         self.station_names = {}

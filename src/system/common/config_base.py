@@ -1,14 +1,19 @@
+from typing import Protocol
 import os
 from configparser import ConfigParser, ExtendedInterpolation, DEFAULTSECT
 
 CONFIG_PATH = "/config.ini"
 
 
+class ConfigProtocol(Protocol):
+    rabbit_host: str
+    log_level: str | None
+
+
 class ConfigBase:
     parser: ConfigParser
     rabbit_host: str
     log_level: str | None
-    prefetch_count: int
 
     section: str = DEFAULTSECT
 
@@ -20,7 +25,6 @@ class ConfigBase:
         self.parser.read(CONFIG_PATH)
         self.log_level = self.get("LogLevel", fallback=None)
         self.rabbit_host = self.get("RabbitHost")
-        self.prefetch_count = self.get_int("PrefetchCount")
 
     def get(self, key: str, **kwargs) -> str:
         return self.parser.get(self.section, key, vars=os.environ, **kwargs).strip()

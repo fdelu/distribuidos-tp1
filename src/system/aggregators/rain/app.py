@@ -2,7 +2,7 @@ import logging
 from shared.log import setup_logs
 
 from common.messages.joined import JoinedRainTrip
-from common.messages.aggregated import PartialRainRecords
+from common.messages.aggregated import PartialRainAverages
 
 from ..common.aggregator import AggregationHandler
 from ..common.config import Config
@@ -18,7 +18,7 @@ def main():
 
     comms = SystemCommunication(config)
     aggregator = RainAggregator()
-    handler = AggregationHandler[JoinedRainTrip, PartialRainRecords](
+    handler = AggregationHandler[JoinedRainTrip, PartialRainAverages](
         comms, aggregator, config
     )
     handler.run()

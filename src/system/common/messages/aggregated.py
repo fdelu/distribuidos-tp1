@@ -63,5 +63,12 @@ GenericAggregatedRecord = TypeVar(
     PartialRainAverages,
     PartialCityAverages,
     PartialYearCounts,
+    covariant=True,
+)
+GenericAggregatedRecordContr = TypeVar(
+    "GenericAggregatedRecordContr",
+    PartialRainAverages,
+    PartialCityAverages,
+    PartialYearCounts,
     contravariant=True,
 )

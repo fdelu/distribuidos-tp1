@@ -2,7 +2,7 @@ import logging
 from shared.log import setup_logs
 
 from common.messages.joined import JoinedCityTrip
-from common.messages.aggregated import PartialCityRecords
+from common.messages.aggregated import PartialCityAverages
 
 from ..common.aggregator import AggregationHandler
 from ..common.config import Config
@@ -18,7 +18,7 @@ def main():
 
     comms = SystemCommunication(config)
     aggregator = CityAggregator()
-    handler = AggregationHandler[JoinedCityTrip, PartialCityRecords](
+    handler = AggregationHandler[JoinedCityTrip, PartialCityAverages](
         comms, aggregator, config
     )
     handler.run()

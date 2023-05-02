@@ -2,7 +2,7 @@ import logging
 from shared.log import setup_logs
 
 from common.messages.joined import JoinedYearTrip
-from common.messages.aggregated import PartialYearRecords
+from common.messages.aggregated import PartialYearCounts
 
 from ..common.aggregator import AggregationHandler
 from .aggregator import YearAggregator
@@ -16,7 +16,7 @@ def main():
 
     comms = SystemCommunication(config)
     aggregator = YearAggregator(config)
-    handler = AggregationHandler[JoinedYearTrip, PartialYearRecords](
+    handler = AggregationHandler[JoinedYearTrip, PartialYearCounts](
         comms, aggregator, config
     )
     handler.run()

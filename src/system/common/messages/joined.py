@@ -26,7 +26,7 @@ class JoinedRainTrip:
         return RecordType.TRIP
 
 
-JoinedRainRecord = JoinedRainTrip | End
+JoinedRainRecords = JoinedRainTrip | End
 
 
 @dataclass
@@ -41,7 +41,7 @@ class JoinedYearTrip:
         return RecordType.TRIP
 
 
-JoinedYearRecord = JoinedYearTrip | End
+JoinedYearRecords = JoinedYearTrip | End
 
 
 @dataclass
@@ -57,7 +57,7 @@ class JoinedCityTrip:
         return RecordType.TRIP
 
 
-JoinedCityRecord = JoinedCityTrip | End
+JoinedCityRecords = JoinedCityTrip | End
 
 
 class JoinedRecordHandler(Protocol[T, U]):
@@ -66,8 +66,8 @@ class JoinedRecordHandler(Protocol[T, U]):
 
 
 JoinedRecord = JoinedRainTrip | JoinedYearTrip | JoinedCityTrip | End
-GenericJoinedRecord = TypeVar(
-    "GenericJoinedRecord",
+GenericJoinedTrip = TypeVar(
+    "GenericJoinedTrip",
     JoinedRainTrip,
     JoinedYearTrip,
     JoinedCityTrip,

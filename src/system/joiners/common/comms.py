@@ -1,26 +1,21 @@
-from typing import Callable
+from abc import abstractmethod
+from typing import Protocol, Callable
 
-from common.comms_base import SystemCommunicationBase
+from common.messages import End
 from common.messages.basic import BasicRecord
-from common.messages.joined import JoinedRecord
+from common.messages.joined import GenericJoinedTrip
+from common.comms_base.protocol import CommsReceiveProtocol, CommsSendProtocol
 
 
-class JoinerComms(SystemCommunicationBase[BasicRecord, JoinedRecord]):
-    EXCHANGE = "basic_records"
-
-    @property
-    def TRIPS_QUEUE(self):
-        ...
-
-    @property
-    def OUT_EXCHANGE(self):
-        ...
-
-    def _get_routing_details(self, record: JoinedRecord):
-        return self.OUT_EXCHANGE, record.get_routing_key()
-
-    def start_consuming_trips(self):
-        self._start_consuming_from(self.TRIPS_QUEUE)
-
+class JoinerComms(
+    CommsReceiveProtocol[BasicRecord],
+    CommsSendProtocol[GenericJoinedTrip | End],
+    Protocol[GenericJoinedTrip],
+):
+    @abstractmethod
     def set_all_trips_done_callback(self, callback: Callable[[], None]):
-        self._set_empty_queue_callback(self.TRIPS_QUEUE, callback)
+        ...
+
+    @abstractmethod
+    def start_consuming_trips(self):
+        ...

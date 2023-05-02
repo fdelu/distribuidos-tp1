@@ -47,7 +47,8 @@ def deserialize_union(type_info: types.UnionType, data: Any) -> Any:
             verify_type(item, t)
             return item
     raise SerializationError(
-        f"Union type {type_info} has failed to deserialize as any of its types"
+        f"Union type {type_info} has failed to deserialize as any of its types. "
+        f"Input type: {data[0]}"
     )
 
 
